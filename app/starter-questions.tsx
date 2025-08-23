@@ -174,15 +174,15 @@ export function StarterQuestions({ onSelect, isLoading }: StarterQuestionsProps)
           <Button type="button" variant="ghost" onClick={() => setManualOpen(false)}>Cancel</Button>
         </div>
       )}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {suggestions.map((q, idx) => (
           <button
             key={idx}
             disabled={isLoading}
             onClick={() => onSelect(q)}
-            className="text-left p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-800 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md transition-colors"
+            className="group text-left p-4 rounded-xl border border-gray-200/60 dark:border-gray-700/60 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm hover:border-blue-300/80 dark:hover:border-blue-600/80 hover:shadow-lg hover:shadow-blue-100/50 dark:hover:shadow-blue-900/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:bg-white/80 dark:hover:bg-gray-900/80"
           >
-            <span className="text-sm text-gray-800 dark:text-gray-200">{q}</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors duration-200">{q}</span>
           </button>
         ))}
       </div>

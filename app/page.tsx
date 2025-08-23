@@ -234,21 +234,58 @@ export default function FireplexityPage() {
   const isChatActive = hasSearched || messages.length > 0
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col">
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-blue-950/30">
       {/* Hero section */}
-      <div className={`px-4 sm:px-6 lg:px-8 pt-20 pb-8 ${isChatActive ? 'hidden' : 'block'}`}>
-        <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-[2.5rem] md:text-[3.5rem] lg:text-[4rem] font-medium tracking-tight leading-tight">
-            <span className="block bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+      <div className={`relative px-4 sm:px-6 lg:px-8 pt-20 pb-16 ${isChatActive ? 'hidden' : 'block'}`}>
+        {/* Background effects */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/3 right-1/3 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-1/4 left-1/2 transform -translate-x-1/2 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl"></div>
+        </div>
+        
+        <div className="relative max-w-7xl mx-auto text-center">
+          <div className="mb-6">
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 border border-blue-200/50 dark:border-blue-800/50 mb-8">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
+              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Next-Generation Research Platform</span>
+            </div>
+          </div>
+          
+          <h1 className="text-[2.8rem] md:text-[4.2rem] lg:text-[5rem] font-bold tracking-tight leading-[0.9] mb-6">
+            <span className="block bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
               AZ Labs Research
             </span>
-            <span className="text-[#262626] dark:text-white block text-[2.3rem] md:text-[3rem] lg:text-[3.5rem] font-medium -mt-1">
-              AI‑Powered Multi‑Source Insights
+            <span className="text-[#1a1a1a] dark:text-gray-100 block text-[2rem] md:text-[2.8rem] lg:text-[3.2rem] font-semibold mt-2 leading-tight">
+              Intelligence at the Speed of Thought
             </span>
           </h1>
-          <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
-            Deep-dive research with citations, news, images, and real‑time context — in one streamlined workspace.
+          
+          <p className="mt-6 text-xl text-zinc-600 dark:text-zinc-300 max-w-3xl mx-auto leading-relaxed">
+            Harness the power of AI to synthesize information from multiple sources instantly.
+            <span className="block mt-2 text-lg text-zinc-500 dark:text-zinc-400">
+              Citations, real-time data, and comprehensive insights — all in one unified experience.
+            </span>
           </p>
+          
+          <div className="mt-12 flex flex-wrap justify-center gap-6 text-sm text-zinc-500 dark:text-zinc-400">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+              Real-time Sources
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+              AI-Powered Analysis
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+              Multi-Modal Results
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+              Instant Citations
+            </div>
+          </div>
         </div>
       </div>
 
@@ -286,25 +323,6 @@ export default function FireplexityPage() {
           )}
         </div>
       </div>
-      {/* Feature highlights below the search on landing */}
-      {!isChatActive && (
-        <div className="px-4 sm:px-6 lg:px-8 pb-12">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 p-5">
-              <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Scholarly Sources</div>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Consolidated references from across the web with inline citations.</p>
-            </div>
-            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 p-5">
-              <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Live Context</div>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">News, images, and tickers enrich findings with up-to-date signals.</p>
-            </div>
-            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 p-5">
-              <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Built for Research</div>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Export, copy citations, and revisit context without losing flow.</p>
-            </div>
-          </div>
-        </div>
-      )}
       
       {/* API Key Modal */}
       <Dialog open={showApiKeyModal} onOpenChange={setShowApiKeyModal}>
