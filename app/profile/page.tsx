@@ -4,7 +4,6 @@ import { useAuth } from '@/app/contexts/auth-context'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import { User, Mail, Calendar, Save, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
@@ -249,7 +248,10 @@ export default function ProfilePage() {
                       className="h-12 w-12 rounded-full object-cover"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none'
-                        e.currentTarget.nextElementSibling!.style.display = 'flex'
+                        const sibling = e.currentTarget.nextElementSibling as HTMLElement
+                        if (sibling) {
+                          sibling.style.display = 'flex'
+                        }
                       }}
                     />
                   ) : null}
