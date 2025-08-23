@@ -5,3 +5,4 @@ export async function GET() {
     hasFirecrawlKey: !!process.env.FIRECRAWL_API_KEY
   })
 }
+

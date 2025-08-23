@@ -40,7 +40,7 @@ export function SiteHeader() {
             <span className="text-base sm:text-lg font-semibold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
               AZ Labs Research
             </span>
-            <div className="text-xs text-zinc-500 dark:text-zinc-400 leading-none">Fireplexity — AI multi-source search</div>
+            <div className="text-xs text-zinc-500 dark:text-zinc-400 leading-none">AZ Labs Research — AI multi-source search</div>
           </div>
         </Link>
 
@@ -124,4 +124,3 @@ export function SiteHeader() {
     </header>
   )
 }
-

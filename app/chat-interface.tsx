@@ -178,7 +178,7 @@ export function ChatInterface({ messages, sources, newsResults, imageResults, fo
     const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = 'fireplexity-research.md'
+    a.download = 'az-labs-research.md'
     a.click()
     URL.revokeObjectURL(a.href)
   }
@@ -192,7 +192,7 @@ export function ChatInterface({ messages, sources, newsResults, imageResults, fo
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = 'fireplexity-research.json'
+    a.download = 'az-labs-research.json'
     a.click()
     URL.revokeObjectURL(a.href)
   }

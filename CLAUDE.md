@@ -25,8 +25,8 @@ pnpm lint         # Run Next.js linting
 - **Tailwind CSS** with shadcn/ui components for styling
 
 ### API Architecture
-- **Primary search endpoint**: `/api/fireplexity/search/route.ts` - handles all search requests and AI response streaming
-- **Environment check**: `/api/fireplexity/check-env/route.ts` - validates API key availability
+- **Primary search endpoint**: `/api/az-labs-research/search/route.ts` - handles all search requests and AI response streaming
+- **Environment check**: `/api/az-labs-research/check-env/route.ts` - validates API key availability
 - **Streaming pattern**: Uses `createUIMessageStream()` with custom data parts (`data-sources`, `data-ticker`, `data-followup`, `data-status`)
 
 ### Key Components & Data Flow

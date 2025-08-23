@@ -198,6 +198,7 @@ export async function POST(request: Request) {
             transient: true
           })
           
+          
           // Detect if query is about a company
           const ticker = detectCompanyTicker(query)
           if (ticker) {
@@ -312,7 +313,7 @@ export async function POST(request: Request) {
               messages: [
                 {
                   role: 'system',
-                  content: `Generate 5 natural follow-up questions based on the query and answer.\n                \n                ONLY generate questions if the query warrants them:\n                - Skip for simple greetings or basic acknowledgments\n                - Create questions that feel natural, not forced\n                - Make them genuinely helpful, not just filler\n                - Focus on the topic and sources available\n                \n                If the query doesn't need follow-ups, return an empty response.
+                  content: `Generate 5 natural follow-up questions based on the query and answer.\n                \n                ONLY generate questions if the query warrants them:\n                - Skip for simple greetings or basic acknowledgments\n                - Create questions that feel natural, not forced\n                - Make them genuinely helpful, not just filler\n                - Focus on the topic and sources available\n                \n+                If the query doesn't need follow-ups, return an empty response.
                   ${isFollowUp ? 'Consider the full conversation history and avoid repeating previous questions.' : ''}
                   Return only the questions, one per line, no numbering or bullets.`
                 },
@@ -401,3 +402,4 @@ export async function POST(request: Request) {
     )
   }
 }
+

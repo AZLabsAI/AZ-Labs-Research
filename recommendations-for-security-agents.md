@@ -42,11 +42,11 @@ remotePatterns: [
 ### 2. Remove Client-Side API Key Handling
 
 **Files to modify:** 
-- `app/api/fireplexity/search/route.ts` (line 34)
+- `app/api/az-labs-research/search/route.ts` (line 34)
 - `app/page.tsx` (lines 41, 51, 176-177, 347)
 
 **Instructions:**
-1. In `app/api/fireplexity/search/route.ts`:
+1. In `app/api/az-labs-research/search/route.ts`:
    - Remove line 34: `const firecrawlApiKey = body.firecrawlApiKey || process.env.FIRECRAWL_API_KEY`
    - Replace with: `const firecrawlApiKey = process.env.FIRECRAWL_API_KEY`
 
@@ -80,12 +80,12 @@ if (!symbol || !/^[A-Z]{1,5}$/.test(symbol)) {
 ### 4. Add Input Validation
 
 **Files to modify:**
-- `app/api/fireplexity/search/route.ts`
+- `app/api/az-labs-research/search/route.ts`
 - `app/auth/login/page.tsx`
 
 **Instructions:**
 1. Install zod if not already installed: `pnpm add zod`
-2. In `app/api/fireplexity/search/route.ts`:
+2. In `app/api/az-labs-research/search/route.ts`:
    - Add import: `import { z } from 'zod'`
    - Add schema definition:
    ```typescript
@@ -104,7 +104,7 @@ if (!symbol || !/^[A-Z]{1,5}$/.test(symbol)) {
 
 ### 5. Remove Stack Traces from Production Errors
 
-**File to modify:** `app/api/fireplexity/search/route.ts`
+**File to modify:** `app/api/az-labs-research/search/route.ts`
 **Current issue:** Lines 395-402 expose stack traces
 
 **Instructions:**

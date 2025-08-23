@@ -27,7 +27,7 @@ interface MessageData {
   ticker?: string
 }
 
-export default function FireplexityPage() {
+export default function AZLabsResearchPage() {
   const [sources, setSources] = useState<SearchResult[]>([])
   const [newsResults, setNewsResults] = useState<NewsResult[]>([])
   const [imageResults, setImageResults] = useState<ImageResult[]>([])
@@ -47,7 +47,7 @@ export default function FireplexityPage() {
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
-      api: '/api/fireplexity/search',
+      api: '/api/az-labs-research/search',
       body: firecrawlApiKey ? { firecrawlApiKey } : undefined
     })
   })
@@ -149,7 +149,7 @@ export default function FireplexityPage() {
   useEffect(() => {
     const checkApiKey = async () => {
       try {
-        const response = await fetch('/api/fireplexity/check-env')
+        const response = await fetch('/api/az-labs-research/check-env')
         const data = await response.json()
         
         if (data.hasFirecrawlKey) {

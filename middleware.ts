@@ -16,7 +16,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith('/_next') ||
     pathname.startsWith('/static') ||
     pathname.startsWith('/favicon') ||
-    pathname.startsWith('/api/fireplexity') ||
+    pathname.startsWith('/api/az-labs-research') ||
     pathname.includes('.')
   ) {
     return res
