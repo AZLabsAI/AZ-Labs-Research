@@ -20,13 +20,13 @@ export function SearchComponent({ handleSubmit, input, handleInputChange, isLoad
           value={input}
           onChange={handleInputChange}
           placeholder="Ask anything..."
-          className="pr-24 h-14 text-lg rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-800 transition-colors"
+          className="pr-24 h-14 text-lg rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-800 transition-colors shadow-sm focus-visible:ring-2 focus-visible:ring-blue-500/30"
           disabled={isLoading}
         />
         <button
           type="submit"
           disabled={isLoading || !input || input.trim() === ''}
-          className="absolute right-2 p-0 flex items-center justify-center rounded-lg bg-[#ff4d00] hover:bg-[#e64400] disabled:bg-gray-300 disabled:cursor-not-allowed active:scale-95 group"
+          className="absolute right-2 p-0 flex items-center justify-center rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] disabled:bg-gray-300 disabled:cursor-not-allowed active:scale-95 group"
         >
           <div className="w-[60px] h-[38px] flex items-center justify-center">
             {isLoading ? (

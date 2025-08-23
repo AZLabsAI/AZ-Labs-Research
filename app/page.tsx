@@ -3,11 +3,10 @@
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import { SearchComponent } from './search'
+import { StarterQuestions } from './starter-questions'
 import { ChatInterface } from './chat-interface'
 import { SearchResult, NewsResult, ImageResult } from './types'
 import { Button } from '@/components/ui/button'
-import Link from 'next/link'
-import Image from 'next/image'
 import { useState, useEffect, useRef } from 'react'
 import {
   Dialog,
@@ -188,35 +187,28 @@ export default function FireplexityPage() {
     }
   }
 
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!input.trim()) return
-    
+  const sendQuery = (query: string) => {
+    if (!query.trim()) return
     // Check if we have an API key
     if (!hasApiKey) {
-      setPendingQuery(input)
+      setPendingQuery(query)
       setShowApiKeyModal(true)
       return
     }
-    
     setHasSearched(true)
-    // Don't clear data here - wait for new data to arrive
-    // This prevents layout jump
-    sendMessage({ text: input })
+    sendMessage({ text: query })
     setInput('')
+  }
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    sendQuery(input)
   }
   
   // Wrapped submit handler for chat interface
   const handleChatSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!input.trim()) return
-    
-    // Check if we have an API key
-    if (!hasApiKey) {
-      setPendingQuery(input)
-      setShowApiKeyModal(true)
-      return
-    }
     
     // Store current data in messageData before new query
     if (messages.length > 0 && sources.length > 0) {
@@ -235,49 +227,27 @@ export default function FireplexityPage() {
       }
     }
     
-    // Don't clear data here - wait for new data to arrive
-    // The useEffect will clear when it detects a new assistant message starting
-    sendMessage({ text: input })
-    setInput('')
+    // Use common sender (will handle API key & state)
+    sendQuery(input)
   }
 
   const isChatActive = hasSearched || messages.length > 0
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header with logo - fixed width to prevent jumping */}
-      <header className="px-4 sm:px-6 lg:px-8 py-1 mt-2">
-        <div className="max-w-[1216px] mx-auto flex items-center justify-between">
-          <Link
-            href="https://firecrawl.dev"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center"
-          >
-            <Image 
-              src="/firecrawl-wordmark.svg" 
-              alt="Firecrawl Logo" 
-              width={90} 
-              height={24}
-              className="h-6 w-auto"
-            />
-          </Link>
-        </div>
-      </header>
-
-      {/* Hero section - matching other pages */}
-      <div className={`px-4 sm:px-6 lg:px-8 pt-16 pb-8 ${isChatActive ? 'hidden' : 'block'}`}>
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col">
+      {/* Hero section */}
+      <div className={`px-4 sm:px-6 lg:px-8 pt-20 pb-8 ${isChatActive ? 'hidden' : 'block'}`}>
         <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-[3rem] lg:text-[4rem] font-medium tracking-tight leading-tight">
-            <span className="text-[#ff4d00] block">
-              Fireplexity v2
+          <h1 className="text-[2.5rem] md:text-[3.5rem] lg:text-[4rem] font-medium tracking-tight leading-tight">
+            <span className="block bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+              AZ Labs Research
             </span>
-            <span className="text-[#262626] dark:text-white block text-[3rem] lg:text-[4rem] font-medium -mt-2">
-              Search & Scrape
+            <span className="text-[#262626] dark:text-white block text-[2.3rem] md:text-[3rem] lg:text-[3.5rem] font-medium -mt-1">
+              AI‑Powered Multi‑Source Insights
             </span>
           </h1>
-          <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400">
-            Multi-source search with AI-powered insights, news, and images
+          <p className="mt-4 text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
+            Deep-dive research with citations, news, images, and real‑time context — in one streamlined workspace.
           </p>
         </div>
       </div>
@@ -286,12 +256,18 @@ export default function FireplexityPage() {
       <div className="flex-1 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto h-full">
           {!isChatActive ? (
-            <SearchComponent 
-              handleSubmit={handleSearch}
-              input={input}
-              handleInputChange={(e) => setInput(e.target.value)}
-              isLoading={status === 'streaming'}
-            />
+            <>
+              <SearchComponent 
+                handleSubmit={handleSearch}
+                input={input}
+                handleInputChange={(e) => setInput(e.target.value)}
+                isLoading={status === 'streaming'}
+              />
+              <StarterQuestions 
+                onSelect={sendQuery}
+                isLoading={status === 'streaming'}
+              />
+            </>
           ) : (
             <ChatInterface 
               messages={messages}
@@ -310,20 +286,38 @@ export default function FireplexityPage() {
           )}
         </div>
       </div>
-
+      {/* Feature highlights below the search on landing */}
+      {!isChatActive && (
+        <div className="px-4 sm:px-6 lg:px-8 pb-12">
+          <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 p-5">
+              <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Scholarly Sources</div>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Consolidated references from across the web with inline citations.</p>
+            </div>
+            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 p-5">
+              <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Live Context</div>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">News, images, and tickers enrich findings with up-to-date signals.</p>
+            </div>
+            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 p-5">
+              <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Built for Research</div>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Export, copy citations, and revisit context without losing flow.</p>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* API Key Modal */}
       <Dialog open={showApiKeyModal} onOpenChange={setShowApiKeyModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Firecrawl API Key Required</DialogTitle>
+            <DialogTitle>API Key Required</DialogTitle>
             <DialogDescription>
-              To use Fireplexity search, you need a Firecrawl API key. Get one for free at{' '}
+              To use AZ Labs Research, you need a Firecrawl API key for data collection. Get one for free at{' '}
               <a 
                 href="https://www.firecrawl.dev" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-orange-600 hover:text-orange-700 underline"
+                className="text-blue-600 hover:text-blue-700 underline"
               >
                 firecrawl.dev
               </a>
@@ -331,7 +325,7 @@ export default function FireplexityPage() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <Input
-              placeholder="Enter your Firecrawl API key"
+              placeholder="Enter your API key"
               value={firecrawlApiKey}
               onChange={(e) => setFirecrawlApiKey(e.target.value)}
               onKeyDown={(e) => {
@@ -342,7 +336,7 @@ export default function FireplexityPage() {
               }}
               className="h-12"
             />
-            <Button onClick={handleApiKeySubmit} variant="orange" className="w-full">
+            <Button onClick={handleApiKeySubmit} variant="blue" className="w-full">
               Save API Key
             </Button>
           </div>

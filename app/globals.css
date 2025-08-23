@@ -86,6 +86,26 @@
 
 /* Custom animation utilities */
 @layer utilities {
+  /* Shimmer for skeletons */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .animate-shimmer {
+    background-size: 200% 100%;
+    animation: shimmer 1.5s linear infinite;
+  }
+
+  /* Indeterminate progress bar */
+  @keyframes progress-indeterminate {
+    0% { transform: scaleX(0.05); }
+    50% { transform: scaleX(0.85); }
+    100% { transform: scaleX(0.95); }
+  }
+  .animate-progress-indeterminate {
+    animation: progress-indeterminate 2s ease-in-out infinite;
+    transform-origin: left;
+  }
   /* CSS Variables for animation */
   :root {
     /* Durations */

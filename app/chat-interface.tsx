@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useEffect } from 'react'
-import { Send, Loader2, User, Sparkles, FileText, Plus, Copy, RefreshCw, Check } from 'lucide-react'
+import { Send, Loader2, User, Sparkles, FileText, Plus, Copy, RefreshCw, Check, Download, ExternalLink, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -74,6 +74,26 @@ export function ChatInterface({ messages, sources, newsResults, imageResults, fo
   }
 
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const defaultSteps = [
+    'Queuing request',
+    'Finding sources',
+    'Fetching content',
+    'Cross-checking',
+    'Composing answer'
+  ]
+  const envSteps = (process.env.NEXT_PUBLIC_LOADING_STEPS || '')
+    .split('|')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  const steps = envSteps.length ? envSteps : defaultSteps
+  type Speed = 'slow' | 'normal' | 'fast'
+  const [speed, setSpeed] = useState<Speed>('normal')
+  const [cycleMs, setCycleMs] = useState<number>(1000)
+  const [activeStep, setActiveStep] = useState(0)
+  const [processingStartAt, setProcessingStartAt] = useState<number | null>(null)
+  const [estimatedTotal, setEstimatedTotal] = useState<number>(12)
+  const [eta, setEta] = useState<number>(12)
+  const [progress, setProgress] = useState<number>(0)
   
   // Auto-scroll to bottom when new content appears
   useEffect(() => {
@@ -133,11 +153,148 @@ export function ChatInterface({ messages, sources, newsResults, imageResults, fo
     }
   }
 
+  // -------- Research utilities: export and citations --------
+  const getLastAssistantContent = (): string => {
+    const lastAssistant = [...messages].reverse().find(m => m.role === 'assistant')
+    return lastAssistant ? getMessageContent(lastAssistant) : ''
+  }
+
+  const exportMarkdown = () => {
+    const answer = getLastAssistantContent()
+    if (!query && !answer) return
+    const lines: string[] = []
+    if (query) lines.push(`# ${query}`)
+    if (answer) {
+      if (lines.length) lines.push('')
+      lines.push(answer)
+    }
+    if (sources.length > 0) {
+      lines.push('', '## Sources')
+      sources.forEach((s, i) => {
+        const site = s.siteName || (s.url ? new URL(s.url).hostname.replace('www.', '') : '')
+        lines.push(`${i + 1}. [${s.title || s.url}](${s.url})${site ? ` — ${site}` : ''}`)
+      })
+    }
+    const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = 'fireplexity-research.md'
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+
+  const exportJSON = () => {
+    const data = {
+      query,
+      answer: getLastAssistantContent(),
+      sources
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = 'fireplexity-research.json'
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+
+  const copyCitations = () => {
+    if (sources.length === 0) return
+    const text = sources.map((s, i) => {
+      const site = s.siteName || (s.url ? new URL(s.url).hostname.replace('www.', '') : '')
+      return `${i + 1}. ${s.title || s.url}${site ? ` — ${site}` : ''}\n${s.url}`
+    }).join('\n\n')
+    navigator.clipboard.writeText(text)
+  }
+
+  const openAllSources = () => {
+    if (sources.length === 0) return
+    // Opening many tabs can be blocked; open up to 5
+    sources.slice(0, 5).forEach(s => window.open(s.url, '_blank'))
+  }
+
+  const clearChat = () => {
+    // Easiest reset for now
+    window.location.href = '/'
+  }
+
+  // Cycle active step while waiting/streaming
+  // Initialize speed from env or localStorage (env takes precedence)
+  useEffect(() => {
+    const envSpeed = (process.env.NEXT_PUBLIC_LOADING_SPEED as Speed | undefined) || undefined
+    const ls = typeof window !== 'undefined' ? (localStorage.getItem('loading-speed') as Speed | null) : null
+    const initial: Speed = envSpeed || ls || 'normal'
+    setSpeed(initial)
+  }, [])
+
+  // React to speed changes
+  useEffect(() => {
+    const ms = speed === 'slow' ? 1400 : speed === 'fast' ? 700 : 1000
+    setCycleMs(ms)
+    if (typeof window !== 'undefined') localStorage.setItem('loading-speed', speed)
+  }, [speed])
+
+  useEffect(() => {
+    if (!(isWaitingForResponse || isLoading)) return
+    const id = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % steps.length)
+    }, cycleMs)
+    return () => clearInterval(id)
+  }, [isWaitingForResponse, isLoading, steps.length, cycleMs])
+
+  // Estimated time + progress tracking tied to processing lifecycle
+  useEffect(() => {
+    const processing = isWaitingForResponse || isLoading
+    if (processing && processingStartAt === null) {
+      // Heuristic estimate based on query length (shorter → quicker)
+      const len = (query || '').length
+      const base = 8
+      const extra = Math.min(10, Math.floor(len / 35)) // up to +10s
+      const jitter = Math.floor(Math.random() * 3) // 0-2s
+      const total = base + extra + jitter
+      setEstimatedTotal(total)
+      setEta(total)
+      setProgress(0)
+      setActiveStep(0)
+      setProcessingStartAt(Date.now())
+    }
+    if (!processing && processingStartAt !== null) {
+      // Reset after completion
+      setProcessingStartAt(null)
+      setEta(0)
+      setProgress(1)
+    }
+  }, [isWaitingForResponse, isLoading, query, processingStartAt])
+
+  useEffect(() => {
+    if (processingStartAt === null) return
+    const id = setInterval(() => {
+      const elapsedSec = Math.floor((Date.now() - processingStartAt) / 1000)
+      const remaining = Math.max(0, estimatedTotal - elapsedSec)
+      setEta(remaining)
+      const p = Math.min(0.95, elapsedSec / Math.max(1, estimatedTotal))
+      setProgress(p)
+    }, 1000)
+    return () => clearInterval(id)
+  }, [processingStartAt, estimatedTotal])
+
 
   return (
     <div className="flex h-full relative" style={{ height: 'calc(100vh - 80px)' }}>
       {/* Main content area */}
       <div className="flex-1 flex flex-col relative">
+        {/* Top indeterminate progress bar while processing */}
+        {(isWaitingForResponse || isLoading) && (
+          <div className="pointer-events-none absolute left-0 right-0 top-0">
+            <div className="mx-auto max-w-4xl px-4">
+              <div className="h-[3px] rounded-full overflow-hidden bg-gray-100 dark:bg-zinc-800">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 transition-[width] duration-300"
+                  style={{ width: `${Math.max(5, Math.floor(progress * 100))}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
         {/* Top gradient overlay - removed */}
         
         {/* Scrollable content */}
@@ -226,7 +383,7 @@ export function ChatInterface({ messages, sources, newsResults, imageResults, fo
                                   href={result.url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="group relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md h-28"
+                                  className="group relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md h-28"
                                 >
                                   {/* Background image */}
                                   {result.image && (
@@ -277,7 +434,7 @@ export function ChatInterface({ messages, sources, newsResults, imageResults, fo
                                     </div>
                                     
                                     {/* Title */}
-                                    <h3 className="font-medium text-xs text-gray-900 dark:text-white line-clamp-2 group-hover:text-orange-600 dark:group-hover:text-orange-400 leading-tight">
+                                    <h3 className="font-medium text-xs text-gray-900 dark:text-white line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-tight">
                                       {result.title}
                                     </h3>
                                     
@@ -344,11 +501,11 @@ export function ChatInterface({ messages, sources, newsResults, imageResults, fo
                                 <button
                                   key={qIndex}
                                   onClick={() => handleFollowUpClick(question)}
-                                  className="w-full text-left p-2 bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md group"
+                                  className="w-full text-left p-2 bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md group"
                                 >
                                   <div className="flex items-start gap-2">
-                                    <Plus className="h-4 w-4 text-gray-400 group-hover:text-orange-500 flex-shrink-0 mt-0.5" />
-                                    <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-orange-600 dark:group-hover:text-orange-400 break-words">
+                                    <Plus className="h-4 w-4 text-gray-400 group-hover:text-blue-500 flex-shrink-0 mt-0.5" />
+                                    <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 break-words">
                                       {question}
                                     </span>
                                   </div>
@@ -379,6 +536,35 @@ export function ChatInterface({ messages, sources, newsResults, imageResults, fo
               <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span>{searchStatus}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Research toolbar */}
+          {(sources.length > 0 || query) && (
+            <div className="opacity-0 animate-fade-up [animation-duration:400ms] [animation-delay:120ms] [animation-fill-mode:forwards] mb-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <button onClick={exportMarkdown} className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 text-sm">
+                  <Download className="h-3.5 w-3.5" /> Export MD
+                </button>
+                <button onClick={exportJSON} className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 text-sm">
+                  <FileText className="h-3.5 w-3.5" /> Export JSON
+                </button>
+                {sources.length > 0 && (
+                  <>
+                    <button onClick={copyCitations} className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 text-sm">
+                      <Copy className="h-3.5 w-3.5" /> Copy citations
+                    </button>
+                    <button onClick={openAllSources} className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 text-sm">
+                      <ExternalLink className="h-3.5 w-3.5" /> Open top sources
+                    </button>
+                  </>
+                )}
+                <div className="ml-auto">
+                  <button onClick={clearChat} className="inline-flex items-center gap-2 h-8 px-3 rounded-md border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-700 dark:text-red-300 text-sm">
+                    <Trash2 className="h-3.5 w-3.5" /> Clear
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -430,7 +616,7 @@ export function ChatInterface({ messages, sources, newsResults, imageResults, fo
                     href={result.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="group relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md h-28"
+                    className="group relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md h-28"
                   >
                     {/* Background image */}
                     {result.image && (
@@ -481,7 +667,7 @@ export function ChatInterface({ messages, sources, newsResults, imageResults, fo
                       </div>
                       
                       {/* Title */}
-                      <h3 className="font-medium text-xs text-gray-900 dark:text-white line-clamp-2 group-hover:text-orange-600 dark:group-hover:text-orange-400 leading-tight">
+                      <h3 className="font-medium text-xs text-gray-900 dark:text-white line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-tight">
                         {result.title}
                       </h3>
                       
@@ -565,17 +751,74 @@ export function ChatInterface({ messages, sources, newsResults, imageResults, fo
             </div>
           )}
           
-          {/* Show loading state while streaming */}
-          {isLoading && messages[messages.length - 1]?.role === 'user' && (
-            <div className="opacity-0 animate-fade-up [animation-duration:500ms] [animation-fill-mode:forwards]">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="h-4 w-4 text-black dark:text-white" />
-                <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">Answer</h2>
+          {/* Engaging processing panel while streaming */}
+          {(isWaitingForResponse || isLoading) && messages[messages.length - 1]?.role === 'user' && (
+            <div className="opacity-0 animate-fade-up [animation-duration:500ms] [animation-fill-mode:forwards] space-y-5">
+              {/* Stepper */}
+              <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-blue-600" />
+                    <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">Research in progress</h2>
+                  </div>
+                <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    {eta > 0 ? `~${eta}s remaining` : 'Working…'}
+                  </div>
+                  {((process.env.NEXT_PUBLIC_LOADING_CONTROLS || 'on') !== 'hidden') && (
+                    <div className="hidden sm:flex items-center gap-1">
+                      <span className="text-[10px]">Speed</span>
+                      {(['slow','normal','fast'] as Speed[]).map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setSpeed(s)}
+                          className={`px-1.5 py-0.5 rounded border text-[10px] leading-none transition-colors ${speed === s ? 'border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/30' : 'border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400'}`}
+                          title={`${s} cycle`}
+                        >
+                          {s[0].toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                  {steps.map((label, i) => (
+                    <div key={label} className={`rounded-lg border text-xs px-3 py-2 transition-colors ${i === activeStep ? 'border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300' : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 bg-white dark:bg-zinc-900'}`}>
+                      {i <= activeStep ? '•' : '○'} {label}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sources skeleton */}
               <div>
-                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Generating answer...</span>
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText className="h-4 w-4 text-black dark:text-white" />
+                  <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">Sources</h2>
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                  {Array.from({ length: 5 }).map((_, idx) => (
+                    <div key={idx} className="h-28 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+                      <div className="h-full w-full bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 dark:from-zinc-800 dark:via-zinc-700 dark:to-zinc-800 animate-shimmer" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Answer skeleton */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="h-4 w-4 text-black dark:text-white" />
+                  <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">Answer</h2>
+                </div>
+                <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-4 bg-white dark:bg-zinc-900">
+                  <div className="h-4 rounded bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 dark:from-zinc-800 dark:via-zinc-700 dark:to-zinc-800 animate-shimmer mb-2" />
+                  <div className="h-4 rounded bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 dark:from-zinc-800 dark:via-zinc-700 dark:to-zinc-800 animate-shimmer mb-2 w-11/12" />
+                  <div className="h-4 rounded bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 dark:from-zinc-800 dark:via-zinc-700 dark:to-zinc-800 animate-shimmer mb-2 w-10/12" />
+                  <div className="h-4 rounded bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 dark:from-zinc-800 dark:via-zinc-700 dark:to-zinc-800 animate-shimmer w-7/12" />
                 </div>
               </div>
             </div>
@@ -593,11 +836,11 @@ export function ChatInterface({ messages, sources, newsResults, imageResults, fo
                   <button
                     key={index}
                     onClick={() => handleFollowUpClick(question)}
-                    className="w-full text-left p-2 bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md group"
+                    className="w-full text-left p-2 bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md group"
                   >
                     <div className="flex items-center gap-2">
-                      <Plus className="h-4 w-4 text-gray-400 group-hover:text-orange-500 flex-shrink-0" />
-                      <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-orange-600 dark:group-hover:text-orange-400">
+                      <Plus className="h-4 w-4 text-gray-400 group-hover:text-blue-500 flex-shrink-0" />
+                      <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
                         {question}
                       </span>
                     </div>
@@ -640,7 +883,7 @@ export function ChatInterface({ messages, sources, newsResults, imageResults, fo
                 <button
                   type="submit"
                   disabled={!input.trim() || isLoading}
-                  className="p-0 flex items-center justify-center rounded-lg bg-[#ff4d00] hover:bg-[#e64400] disabled:bg-gray-300 disabled:cursor-not-allowed active:scale-95 group"
+                  className="p-0 flex items-center justify-center rounded-lg bg-[#2563eb] hover:bg-[#1d4ed8] disabled:bg-gray-300 disabled:cursor-not-allowed active:scale-95 group"
                 >
                   <div className="w-[48px] h-[32px] flex items-center justify-center">
                     {isLoading ? (
@@ -667,6 +910,17 @@ export function ChatInterface({ messages, sources, newsResults, imageResults, fo
                 </button>
               </div>
             </div>
+            {(isWaitingForResponse || isLoading) && (
+              <div className="mt-2 flex items-center gap-3 px-1">
+                <div className="flex-1 h-1 rounded-full bg-gray-100 dark:bg-zinc-800 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all"
+                    style={{ width: `${Math.floor(progress * 100)}%` }}
+                  />
+                </div>
+                <div className="text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap">{eta > 0 ? `~${eta}s` : '...'}</div>
+              </div>
+            )}
           </form>
         </div>
         
