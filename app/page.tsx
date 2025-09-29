@@ -241,37 +241,62 @@ export default function AZLabsResearchPage() {
   const isChatActive = hasSearched || messages.length > 0
 
   return (
-    <div className="min-h-[calc(100vh-6rem)] flex flex-col bg-gradient-to-br from-slate-50 via-white to-cyan-50/40 dark:from-slate-950 dark:via-gray-900 dark:to-cyan-950/30 relative overflow-hidden">
-      {/* Enhanced Background effects */}
+    <div className="min-h-[calc(100vh-6rem)] flex flex-col relative overflow-hidden bg-slate-50 dark:bg-slate-950">
+      {/* Stunning animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-gradient-to-r from-blue-500/15 to-cyan-500/15 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-gradient-to-l from-purple-500/12 to-pink-500/12 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute bottom-1/4 left-1/2 transform -translate-x-1/2 w-[700px] h-[700px] bg-gradient-to-t from-indigo-500/10 to-violet-500/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
+        {/* Gradient orbs with better positioning */}
+        <div className="absolute -top-40 -left-40 w-[800px] h-[800px] bg-gradient-to-br from-blue-500/20 via-cyan-500/20 to-transparent rounded-full blur-3xl animate-float-slow"></div>
+        <div className="absolute top-1/3 -right-40 w-[700px] h-[700px] bg-gradient-to-bl from-purple-500/15 via-pink-500/15 to-transparent rounded-full blur-3xl animate-float-slower"></div>
+        <div className="absolute -bottom-40 left-1/3 w-[900px] h-[900px] bg-gradient-to-tr from-indigo-500/20 via-violet-500/15 to-transparent rounded-full blur-3xl animate-float-slowest"></div>
         
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,.02)_1px,transparent_1px)] bg-[size:72px_72px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black_40%,transparent_100%)] dark:bg-[linear-gradient(rgba(255,255,255,.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.02)_1px,transparent_1px)]"></div>
+        {/* Mesh gradient overlay */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))] dark:bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.1),rgba(0,0,0,0))]"></div>
+        
+        {/* Grid pattern - more subtle */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,.015)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,.015)_1px,transparent_1px)] bg-[size:80px_80px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,black_10%,transparent_100%)] dark:bg-[linear-gradient(rgba(255,255,255,.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.015)_1px,transparent_1px)]"></div>
       </div>
       
-      {/* Hero section */}
-      <div className={`relative px-4 sm:px-6 lg:px-8 pt-8 pb-8 ${isChatActive ? 'hidden' : 'block'}`}>        
-        <div className="relative max-w-7xl mx-auto text-center">
-          <div className="mb-6 animate-fade-in">
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-50/80 to-cyan-50/80 dark:from-blue-950/60 dark:to-cyan-950/60 border border-blue-200/60 dark:border-blue-800/50 backdrop-blur-sm shadow-lg shadow-blue-100/25 dark:shadow-blue-900/25 mb-6 hover:shadow-blue-200/40 dark:hover:shadow-blue-800/40 transition-all duration-300">
-              <div className="w-2 h-2 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full mr-2 animate-pulse shadow-sm shadow-emerald-500/50"></div>
-              <span className="text-xs font-medium bg-gradient-to-r from-blue-700 to-cyan-700 dark:from-blue-300 dark:to-cyan-300 bg-clip-text text-transparent">
-                Next-Generation Research Platform • AI-Powered
-              </span>
+      {/* Hero section with improved design */}
+      <div className={`relative px-4 sm:px-6 lg:px-8 ${isChatActive ? 'pt-8 pb-4' : 'pt-20 pb-16'} transition-all duration-500`}>        
+        <div className="relative max-w-7xl mx-auto">
+          {!isChatActive && (
+            <div className="text-center space-y-8">
+              {/* Badge with better styling */}
+              <div className="flex justify-center animate-fade-in">
+                <div className="group inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-blue-500/10 via-cyan-500/10 to-purple-500/10 dark:from-blue-500/20 dark:via-cyan-500/20 dark:to-purple-500/20 border border-blue-200/50 dark:border-blue-800/50 backdrop-blur-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-default">
+                  <div className="relative flex items-center justify-center">
+                    <div className="absolute w-2 h-2 bg-emerald-500 rounded-full animate-ping"></div>
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full shadow-lg shadow-emerald-500/50"></div>
+                  </div>
+                  <span className="text-sm font-semibold bg-gradient-to-r from-blue-600 via-cyan-600 to-purple-600 dark:from-blue-400 dark:via-cyan-400 dark:to-purple-400 bg-clip-text text-transparent">
+                    Next-Gen AI Research Platform
+                  </span>
+                  <div className="px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 text-[10px] font-bold text-white uppercase tracking-wide shadow-sm">
+                    Beta
+                  </div>
+                </div>
+              </div>
+              
+              {/* Main heading with enhanced typography */}
+              <div className="space-y-6 animate-fade-up">
+                <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black tracking-tight">
+                  <span className="block bg-gradient-to-r from-blue-600 via-cyan-600 to-indigo-600 dark:from-blue-400 dark:via-cyan-400 dark:to-indigo-400 bg-clip-text text-transparent hover:from-cyan-600 hover:via-purple-600 hover:to-pink-600 transition-all duration-700 drop-shadow-sm">
+                    AZ Labs
+                  </span>
+                  <span className="block mt-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
+                    Research
+                  </span>
+                </h1>
+                
+                <p className="text-lg sm:text-xl md:text-2xl text-gray-600 dark:text-gray-400 font-medium max-w-3xl mx-auto leading-relaxed">
+                  Discover insights powered by AI. Search the web, analyze sources, and get comprehensive answers in seconds.
+                </p>
+              </div>
             </div>
-          </div>
+          )}
           
-          <h1 className="text-[2.5rem] md:text-[3.5rem] lg:text-[4rem] font-black tracking-tight leading-[0.85] mb-8 animate-fade-up">
-            <span className="block bg-gradient-to-r from-blue-600 via-cyan-600 to-indigo-600 dark:from-blue-400 dark:via-cyan-400 dark:to-indigo-400 bg-clip-text text-transparent hover:from-cyan-600 hover:via-blue-600 hover:to-purple-600 transition-all duration-700">
-              AZ Labs Research
-            </span>
-          </h1>
-          
-          {/* Search Component - moved to hero */}
-          <div className="animate-fade-up delay-300 mb-6">
+          {/* Search Component with better positioning */}
+          <div className={`${isChatActive ? 'animate-none' : 'animate-fade-up delay-300'} ${isChatActive ? 'mt-0' : 'mt-12'} transition-all duration-500`}>
             <SearchComponent 
               handleSubmit={handleSearch}
               input={input}
@@ -280,13 +305,38 @@ export default function AZLabsResearchPage() {
             />
           </div>
           
-          {/* Starter Questions - right under search */}
-          <div className="animate-fade-up delay-400 mb-6">
-            <StarterQuestions 
-              onSelect={sendQuery}
-              isLoading={status === 'streaming'}
-            />
-          </div>
+          {/* Starter Questions with improved layout */}
+          {!isChatActive && (
+            <div className="animate-fade-up delay-400 mt-12">
+              <StarterQuestions 
+                onSelect={sendQuery}
+                isLoading={status === 'streaming'}
+              />
+            </div>
+          )}
+          
+          {/* Feature highlights */}
+          {!isChatActive && (
+            <div className="animate-fade-up delay-500 mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+              <div className="group p-6 rounded-2xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-800/50 hover:shadow-xl hover:scale-105 transition-all duration-300">
+                <div className="text-3xl mb-3">⚡</div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Lightning Fast</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Get answers in seconds with real-time web search</p>
+              </div>
+              
+              <div className="group p-6 rounded-2xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-800/50 hover:shadow-xl hover:scale-105 transition-all duration-300">
+                <div className="text-3xl mb-3">🎯</div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Accurate Sources</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Cited references from trusted websites</p>
+              </div>
+              
+              <div className="group p-6 rounded-2xl bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm border border-gray-200/50 dark:border-gray-800/50 hover:shadow-xl hover:scale-105 transition-all duration-300">
+                <div className="text-3xl mb-3">🧠</div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">AI-Powered</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Advanced AI for comprehensive analysis</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
