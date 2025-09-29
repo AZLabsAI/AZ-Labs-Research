@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { Github } from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const router = useRouter()
+  const supabase = createClient()
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -75,6 +77,28 @@ export default function LoginPage() {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+
+      if (error) {
+        setError(error.message)
+      }
+    } catch (err) {
+      setError('An unexpected error occurred')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleGithubSignIn = async () => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
         },
@@ -153,15 +177,28 @@ export default function LoginPage() {
             </Button>
           </div>
 
-          <Button
-            type="button"
-            onClick={handleGoogleSignIn}
-            disabled={isLoading}
-            variant="outline"
-            className="w-full border-white/20 text-white hover:bg-white/10"
-          >
-            Continue with Google
-          </Button>
+          <div className="space-y-2">
+            <Button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={isLoading}
+              variant="outline"
+              className="w-full border-white/20 text-white hover:bg-white/10"
+            >
+              Continue with Google
+            </Button>
+            
+            <Button
+              type="button"
+              onClick={handleGithubSignIn}
+              disabled={isLoading}
+              variant="outline"
+              className="w-full border-white/20 text-white hover:bg-white/10 flex items-center gap-2"
+            >
+              <Github className="h-4 w-4" />
+              Continue with GitHub
+            </Button>
+          </div>
         </form>
 
         <div className="mt-6 text-center">

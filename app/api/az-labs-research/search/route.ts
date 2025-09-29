@@ -50,6 +50,56 @@ export async function POST(request: Request) {
     // Always perform a fresh search for each query to ensure relevant results
     const isFollowUp = messages.length > 2
     
+    // Extract previous conversation context for follow-ups
+    let previousContext = ''
+    let previousSources: Array<any> = []
+    
+    if (isFollowUp) {
+      // Check if this looks like a contextual follow-up (contains pronouns or is short/incomplete)
+      const contextualIndicators = [
+        'it', 'this', 'that', 'they', 'them', 'these', 'those', 'which', 'who', 'where', 'when',
+        'how', 'why', 'what about', 'and', 'also', 'more', 'further', 'additionally', 'besides',
+        'can you', 'could you', 'would you', 'please', 'tell me more', 'explain', 'elaborate',
+        'what else', 'anything else', 'other', 'another', 'similar', 'related', 'different'
+      ]
+      const isContextualFollowUp = contextualIndicators.some(indicator => 
+        query.toLowerCase().includes(indicator.toLowerCase())
+      ) || query.split(' ').length <= 10 // Slightly longer threshold for contextual queries
+      
+      console.log(`[${requestId}] Follow-up detected: ${isContextualFollowUp ? 'CONTEXTUAL' : 'NEW_TOPIC'} | Query: "${query}"`);
+      
+      if (isContextualFollowUp) {
+        // Try to extract sources from previous messages
+        const previousMessages = messages.slice(0, -1)
+        for (const message of previousMessages) {
+          if (message.role === 'assistant' && message.parts) {
+            for (const part of message.parts) {
+              if (part.type === 'data-sources' && part.data) {
+                if (part.data.sources) {
+                  previousSources = [...previousSources, ...part.data.sources]
+                }
+              }
+            }
+          }
+        }
+        
+        // Create context from previous sources
+        if (previousSources.length > 0) {
+          console.log(`[${requestId}] Found ${previousSources.length} previous sources for contextual follow-up`);
+          previousContext = previousSources
+            .slice(-3) // Use last 3 previous sources to avoid token limit
+            .map((source, index) => {
+              const content = source.markdown || source.content || ''
+              const relevantContent = selectRelevantContent(content, query, 1000)
+              return `[Previous-${index + 1}] ${source.title}\nURL: ${source.url}\n${relevantContent}`
+            })
+            .join('\n\n---\n\n')
+        } else {
+          console.log(`[${requestId}] No previous sources found despite being a contextual follow-up`);
+        }
+      }
+    }
+    
     // Create a UIMessage stream with custom data parts
     const stream = createUIMessageStream({
       originalMessages: messages,
@@ -90,14 +140,14 @@ export async function POST(request: Request) {
           writer.write({
             type: 'data-status',
             id: 'status-1',
-            data: { message: 'Starting search...' },
+            data: { message: '🔍 Starting search...' },
             transient: true
           })
           
           writer.write({
             type: 'data-status',
             id: 'status-2',
-            data: { message: 'Searching for relevant sources...' },
+            data: { message: '📡 Searching for relevant sources...' },
             transient: true
           })
           
@@ -194,7 +244,15 @@ export async function POST(request: Request) {
           writer.write({
             type: 'data-status',
             id: 'status-3',
-            data: { message: 'Analyzing sources and generating answer...' },
+            data: { message: '🧠 Analyzing sources and generating answer...' },
+            transient: true
+          })
+          
+          // Send completion status to indicate we're done loading sources
+          writer.write({
+            type: 'data-status',
+            id: 'status-complete',
+            data: { message: 'complete', isComplete: true },
             transient: true
           })
           
@@ -210,13 +268,20 @@ export async function POST(request: Request) {
           }
           
           // Prepare context from sources with intelligent content selection
-          context = sources
+          const currentContext = sources
             .map((source: { title: string; markdown?: string; content?: string; url: string }, index: number) => {
               const content = source.markdown || source.content || ''
               const relevantContent = selectRelevantContent(content, query, 2000)
               return `[${index + 1}] ${source.title}\nURL: ${source.url}\n${relevantContent}`
             })
             .join('\n\n---\n\n')
+          
+          // Combine previous context with current sources for follow-ups
+          if (isFollowUp && previousContext) {
+            context = `PREVIOUS CONVERSATION SOURCES:\n${previousContext}\n\n${'='.repeat(50)}\n\nCURRENT SEARCH SOURCES:\n${currentContext}`
+          } else {
+            context = currentContext
+          }
 
           
           // Prepare messages for the AI
@@ -253,7 +318,8 @@ export async function POST(request: Request) {
               }
             ]
           } else {
-            // Follow-up question - still use fresh sources from the new search
+            // Follow-up question - use both previous and current sources for context
+            const hasContextualSources = isFollowUp && previousContext
             aiMessages = [
               {
                 role: 'system',
@@ -264,21 +330,33 @@ export async function POST(request: Request) {
                 - Write ALL numbers as plain text: "1 million" NOT "$1$ million", "50%" NOT "$50\\%$"
                 - Only use math syntax for actual mathematical equations if absolutely necessary
                 
-                REMEMBER:
+                CONVERSATION CONTINUITY:
+                - This is a follow-up question building on our previous conversation
+                - The user may refer to previous topics using pronouns like "it", "this", "that"
+                - Connect the current question to the previous context naturally
+                - Use both previous and current sources to provide comprehensive answers
+                
+                ${hasContextualSources ? `SOURCE ORGANIZATION:
+                - Sources marked [Previous-1], [Previous-2], etc. are from our earlier conversation
+                - Sources marked [1], [2], etc. are from the current search
+                - When citing, use the appropriate format: [Previous-1] or [1]
+                - Feel free to reference both types of sources to build comprehensive answers` : ''}
+                
+                STYLE:
                 - Keep the same conversational tone from before
                 - Build on previous context naturally
                 - Match the user's communication style
                 - Use markdown when it helps clarity
-                - Include citations inline as [1], [2], etc. when referencing specific sources
-                - Citations should correspond to the source order (first source = [1], second = [2], etc.)
-                - Use the format [1] not CITATION_1 or any other format`
+                - Provide complete answers that don't assume the user remembers everything`
               },
               // Include conversation context - convert UIMessages to ModelMessages
               ...convertToModelMessages(messages.slice(0, -1)),
-              // Add the current query with the fresh sources
+              // Add the current query with combined sources
               {
                 role: 'user',
-                content: `Answer this query: "${query}"\n\nBased on these sources:\n${context}`
+                content: hasContextualSources 
+                  ? `This is a follow-up question: "${query}"\n\nReference both the previous conversation sources and new search results as needed:\n\n${context}`
+                  : `Answer this query: "${query}"\n\nBased on these sources:\n${context}`
               }
             ]
           }

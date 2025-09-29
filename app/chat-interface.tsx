@@ -13,6 +13,7 @@ import { MarkdownRenderer } from './markdown-renderer'
 import { StockChart } from './stock-chart'
 import { NewsResults } from './news-results'
 import { ImageResults } from './image-results'
+import { LoadingAnimation } from './loading-animation'
 
 interface MessageData {
   sources: SearchResult[]
@@ -751,76 +752,10 @@ export function ChatInterface({ messages, sources, newsResults, imageResults, fo
             </div>
           )}
           
-          {/* Engaging processing panel while streaming */}
+          {/* Amazing new loading animation with ASCII art */}
           {(isWaitingForResponse || isLoading) && messages[messages.length - 1]?.role === 'user' && (
-            <div className="opacity-0 animate-fade-up [animation-duration:500ms] [animation-fill-mode:forwards] space-y-5">
-              {/* Stepper */}
-              <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-blue-600" />
-                    <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">Research in progress</h2>
-                  </div>
-                <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    {eta > 0 ? `~${eta}s remaining` : 'Working…'}
-                  </div>
-                  {((process.env.NEXT_PUBLIC_LOADING_CONTROLS || 'on') !== 'hidden') && (
-                    <div className="hidden sm:flex items-center gap-1">
-                      <span className="text-[10px]">Speed</span>
-                      {(['slow','normal','fast'] as Speed[]).map((s) => (
-                        <button
-                          key={s}
-                          type="button"
-                          onClick={() => setSpeed(s)}
-                          className={`px-1.5 py-0.5 rounded border text-[10px] leading-none transition-colors ${speed === s ? 'border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/30' : 'border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400'}`}
-                          title={`${s} cycle`}
-                        >
-                          {s[0].toUpperCase()}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-                  {steps.map((label, i) => (
-                    <div key={label} className={`rounded-lg border text-xs px-3 py-2 transition-colors ${i === activeStep ? 'border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300' : 'border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-400 bg-white dark:bg-zinc-900'}`}>
-                      {i <= activeStep ? '•' : '○'} {label}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Sources skeleton */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <FileText className="h-4 w-4 text-black dark:text-white" />
-                  <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">Sources</h2>
-                </div>
-                <div className="grid grid-cols-5 gap-2">
-                  {Array.from({ length: 5 }).map((_, idx) => (
-                    <div key={idx} className="h-28 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
-                      <div className="h-full w-full bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 dark:from-zinc-800 dark:via-zinc-700 dark:to-zinc-800 animate-shimmer" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Answer skeleton */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="h-4 w-4 text-black dark:text-white" />
-                  <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">Answer</h2>
-                </div>
-                <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-4 bg-white dark:bg-zinc-900">
-                  <div className="h-4 rounded bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 dark:from-zinc-800 dark:via-zinc-700 dark:to-zinc-800 animate-shimmer mb-2" />
-                  <div className="h-4 rounded bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 dark:from-zinc-800 dark:via-zinc-700 dark:to-zinc-800 animate-shimmer mb-2 w-11/12" />
-                  <div className="h-4 rounded bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 dark:from-zinc-800 dark:via-zinc-700 dark:to-zinc-800 animate-shimmer mb-2 w-10/12" />
-                  <div className="h-4 rounded bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 dark:from-zinc-800 dark:via-zinc-700 dark:to-zinc-800 animate-shimmer w-7/12" />
-                </div>
-              </div>
+            <div className="opacity-0 animate-fade-up [animation-duration:500ms] [animation-fill-mode:forwards]">
+              <LoadingAnimation speed={speed} estimatedTime={estimatedTotal} />
             </div>
           )}
 

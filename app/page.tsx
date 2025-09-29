@@ -44,6 +44,7 @@ export default function AZLabsResearchPage() {
   const [, setIsCheckingEnv] = useState<boolean>(true)
   const [pendingQuery, setPendingQuery] = useState<string>('')
   const [input, setInput] = useState<string>('')
+  const [isSourcesComplete, setIsSourcesComplete] = useState<boolean>(false)
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
@@ -67,6 +68,7 @@ export default function AZLabsResearchPage() {
         setImageResults([])
         setFollowUpQuestions([])
         setCurrentTicker(null)
+        setIsSourcesComplete(false)
         currentMessageIndex.current = newIndex
         lastDataLength.current = 0  // Reset data tracking for new message
       }
@@ -111,6 +113,10 @@ export default function AZLabsResearchPage() {
         
         if (part.type === 'data-status' && part.data) {
           latestStatus = part.data.message || ''
+          // Check if sources are complete
+          if (part.data.isComplete) {
+            setIsSourcesComplete(true)
+          }
         }
       })
       
@@ -143,7 +149,8 @@ export default function AZLabsResearchPage() {
         })
       }
     }
-  }, [status, messages.length, messages[messages.length - 1]?.parts?.length])
+  // Fixed dependency array - only track essential values
+  }, [status, messages.length])
 
   // Check for environment variables on mount
   useEffect(() => {
@@ -234,57 +241,51 @@ export default function AZLabsResearchPage() {
   const isChatActive = hasSearched || messages.length > 0
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-950 dark:via-gray-900 dark:to-blue-950/30">
-      {/* Hero section */}
-      <div className={`relative px-4 sm:px-6 lg:px-8 pt-20 pb-16 ${isChatActive ? 'hidden' : 'block'}`}>
-        {/* Background effects */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
-          <div className="absolute top-1/3 right-1/3 w-72 h-72 bg-purple-500/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-1/4 left-1/2 transform -translate-x-1/2 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl"></div>
-        </div>
+    <div className="min-h-[calc(100vh-6rem)] flex flex-col bg-gradient-to-br from-slate-50 via-white to-cyan-50/40 dark:from-slate-950 dark:via-gray-900 dark:to-cyan-950/30 relative overflow-hidden">
+      {/* Enhanced Background effects */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-gradient-to-r from-blue-500/15 to-cyan-500/15 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-1/3 right-1/4 w-[500px] h-[500px] bg-gradient-to-l from-purple-500/12 to-pink-500/12 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute bottom-1/4 left-1/2 transform -translate-x-1/2 w-[700px] h-[700px] bg-gradient-to-t from-indigo-500/10 to-violet-500/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
         
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,.02)_1px,transparent_1px)] bg-[size:72px_72px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_50%,black_40%,transparent_100%)] dark:bg-[linear-gradient(rgba(255,255,255,.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.02)_1px,transparent_1px)]"></div>
+      </div>
+      
+      {/* Hero section */}
+      <div className={`relative px-4 sm:px-6 lg:px-8 pt-8 pb-8 ${isChatActive ? 'hidden' : 'block'}`}>        
         <div className="relative max-w-7xl mx-auto text-center">
-          <div className="mb-6">
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 border border-blue-200/50 dark:border-blue-800/50 mb-8">
-              <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-              <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Next-Generation Research Platform</span>
+          <div className="mb-6 animate-fade-in">
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-50/80 to-cyan-50/80 dark:from-blue-950/60 dark:to-cyan-950/60 border border-blue-200/60 dark:border-blue-800/50 backdrop-blur-sm shadow-lg shadow-blue-100/25 dark:shadow-blue-900/25 mb-6 hover:shadow-blue-200/40 dark:hover:shadow-blue-800/40 transition-all duration-300">
+              <div className="w-2 h-2 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full mr-2 animate-pulse shadow-sm shadow-emerald-500/50"></div>
+              <span className="text-xs font-medium bg-gradient-to-r from-blue-700 to-cyan-700 dark:from-blue-300 dark:to-cyan-300 bg-clip-text text-transparent">
+                Next-Generation Research Platform • AI-Powered
+              </span>
             </div>
           </div>
           
-          <h1 className="text-[2.8rem] md:text-[4.2rem] lg:text-[5rem] font-bold tracking-tight leading-[0.9] mb-6">
-            <span className="block bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400">
+          <h1 className="text-[2.5rem] md:text-[3.5rem] lg:text-[4rem] font-black tracking-tight leading-[0.85] mb-8 animate-fade-up">
+            <span className="block bg-gradient-to-r from-blue-600 via-cyan-600 to-indigo-600 dark:from-blue-400 dark:via-cyan-400 dark:to-indigo-400 bg-clip-text text-transparent hover:from-cyan-600 hover:via-blue-600 hover:to-purple-600 transition-all duration-700">
               AZ Labs Research
-            </span>
-            <span className="text-[#1a1a1a] dark:text-gray-100 block text-[2rem] md:text-[2.8rem] lg:text-[3.2rem] font-semibold mt-2 leading-tight">
-              Intelligence at the Speed of Thought
             </span>
           </h1>
           
-          <p className="mt-6 text-xl text-zinc-600 dark:text-zinc-300 max-w-3xl mx-auto leading-relaxed">
-            Harness the power of AI to synthesize information from multiple sources instantly.
-            <span className="block mt-2 text-lg text-zinc-500 dark:text-zinc-400">
-              Citations, real-time data, and comprehensive insights — all in one unified experience.
-            </span>
-          </p>
+          {/* Search Component - moved to hero */}
+          <div className="animate-fade-up delay-300 mb-6">
+            <SearchComponent 
+              handleSubmit={handleSearch}
+              input={input}
+              handleInputChange={(e) => setInput(e.target.value)}
+              isLoading={status === 'streaming'}
+            />
+          </div>
           
-          <div className="mt-12 flex flex-wrap justify-center gap-6 text-sm text-zinc-500 dark:text-zinc-400">
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-              Real-time Sources
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-              AI-Powered Analysis
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
-              Multi-Modal Results
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
-              Instant Citations
-            </div>
+          {/* Starter Questions - right under search */}
+          <div className="animate-fade-up delay-400 mb-6">
+            <StarterQuestions 
+              onSelect={sendQuery}
+              isLoading={status === 'streaming'}
+            />
           </div>
         </div>
       </div>
@@ -292,20 +293,7 @@ export default function AZLabsResearchPage() {
       {/* Main content wrapper */}
       <div className="flex-1 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto h-full">
-          {!isChatActive ? (
-            <>
-              <SearchComponent 
-                handleSubmit={handleSearch}
-                input={input}
-                handleInputChange={(e) => setInput(e.target.value)}
-                isLoading={status === 'streaming'}
-              />
-              <StarterQuestions 
-                onSelect={sendQuery}
-                isLoading={status === 'streaming'}
-              />
-            </>
-          ) : (
+          {isChatActive && (
             <ChatInterface 
               messages={messages}
               sources={sources}
