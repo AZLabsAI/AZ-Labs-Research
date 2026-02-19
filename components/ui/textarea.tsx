@@ -7,7 +7,9 @@ function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
     <textarea
       data-slot="textarea"
       className={cn(
-        "border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:bg-input/30 flex field-sizing-content min-h-16 w-full rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+        "focus-ring placeholder:text-muted-foreground flex field-sizing-content min-h-20 w-full rounded-[var(--radius-md)] border border-[hsl(var(--input))] bg-[color-mix(in_srgb,var(--surface)_88%,transparent)] px-3 py-2 text-sm text-[var(--on-surface)] shadow-[var(--shadow-xs)] transition-[border-color,background-color,box-shadow,color] duration-[var(--duration-fast)] ease-[var(--ease-standard)] outline-none",
+        "hover:border-[color-mix(in_srgb,var(--primary-accent)_28%,hsl(var(--border)))] focus-visible:border-[color-mix(in_srgb,var(--primary-accent)_55%,hsl(var(--border)))]",
+        "aria-invalid:border-destructive aria-invalid:focus-visible:shadow-[0_0_0_3px_color-mix(in_srgb,hsl(var(--destructive))_30%,transparent)] disabled:cursor-not-allowed disabled:opacity-60",
         className
       )}
       {...props}

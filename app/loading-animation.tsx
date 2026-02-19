@@ -1,95 +1,45 @@
-'use client'
+"use client"
 
-import { useEffect, useState } from 'react'
-import { Sparkles } from 'lucide-react'
+import { useEffect, useMemo, useState } from "react"
+import { Sparkles } from "lucide-react"
 
 interface LoadingAnimationProps {
-  speed?: 'slow' | 'normal' | 'fast'
+  speed?: "slow" | "normal" | "fast"
   estimatedTime?: number
 }
 
-const ASCII_FRAMES = [
-  // Frame 1 - Search start
-  `
-    ╔════════════════════╗
-    ║   🔍 SEARCHING    ║
-    ║   [ ▓▓▓▓░░░░░░ ]  ║
-    ╚════════════════════╝
-  `,
-  // Frame 2 - Finding sources
-  `
-    ╔════════════════════╗
-    ║   📚 ANALYZING    ║
-    ║   [ ▓▓▓▓▓▓░░░░ ]  ║
-    ╚════════════════════╝
-  `,
-  // Frame 3 - Processing
-  `
-    ╔════════════════════╗
-    ║   ⚡ PROCESSING   ║
-    ║   [ ▓▓▓▓▓▓▓▓░░ ]  ║
-    ╚════════════════════╝
-  `,
-  // Frame 4 - Composing
-  `
-    ╔════════════════════╗
-    ║   ✨ COMPOSING    ║
-    ║   [ ▓▓▓▓▓▓▓▓▓▓ ]  ║
-    ╚════════════════════╝
-  `
-]
-
-const MINI_ASCII = [
-  '⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'
-]
-
 const RESEARCH_STEPS = [
-  { label: 'Initializing search', icon: '🔎', color: 'text-blue-500' },
-  { label: 'Gathering sources', icon: '📡', color: 'text-cyan-500' },
-  { label: 'Analyzing content', icon: '🧠', color: 'text-purple-500' },
-  { label: 'Cross-referencing', icon: '🔗', color: 'text-indigo-500' },
-  { label: 'Generating response', icon: '✨', color: 'text-pink-500' }
+  "Queuing request",
+  "Collecting sources",
+  "Comparing evidence",
+  "Drafting answer",
+  "Finalizing response",
 ]
 
-export function LoadingAnimation({ speed = 'normal', estimatedTime = 10 }: LoadingAnimationProps) {
-  const [currentFrame, setCurrentFrame] = useState(0)
-  const [miniSpinner, setMiniSpinner] = useState(0)
-  const [currentStep, setCurrentStep] = useState(0)
+export function LoadingAnimation({ speed = "normal", estimatedTime = 10 }: LoadingAnimationProps) {
+  const [activeStep, setActiveStep] = useState(0)
   const [elapsedTime, setElapsedTime] = useState(0)
-  const [showAscii, setShowAscii] = useState(true)
 
-  const frameDuration = speed === 'slow' ? 1200 : speed === 'fast' ? 400 : 800
-  const miniSpinnerDuration = 80
+  const frameDuration = speed === "slow" ? 1300 : speed === "fast" ? 600 : 900
 
-  // Cycle through ASCII frames
+  const particles = useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, index) => ({
+        key: index,
+        left: `${8 + (index * 7) % 84}%`,
+        top: `${10 + (index * 11) % 76}%`,
+        delay: `${(index % 6) * 0.3}s`,
+      })),
+    []
+  )
+
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentFrame((prev) => (prev + 1) % ASCII_FRAMES.length)
+      setActiveStep((prev) => (prev + 1) % RESEARCH_STEPS.length)
     }, frameDuration)
     return () => clearInterval(interval)
   }, [frameDuration])
 
-  // Cycle through mini spinner
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMiniSpinner((prev) => (prev + 1) % MINI_ASCII.length)
-    }, miniSpinnerDuration)
-    return () => clearInterval(interval)
-  }, [])
-
-  // Cycle through research steps
-  useEffect(() => {
-    const stepDuration = (estimatedTime * 1000) / RESEARCH_STEPS.length
-    const interval = setInterval(() => {
-      setCurrentStep((prev) => {
-        const next = prev + 1
-        return next >= RESEARCH_STEPS.length ? prev : next
-      })
-    }, stepDuration)
-    return () => clearInterval(interval)
-  }, [estimatedTime])
-
-  // Track elapsed time
   useEffect(() => {
     const interval = setInterval(() => {
       setElapsedTime((prev) => prev + 1)
@@ -97,127 +47,49 @@ export function LoadingAnimation({ speed = 'normal', estimatedTime = 10 }: Loadi
     return () => clearInterval(interval)
   }, [])
 
-  // Toggle ASCII visibility for breathing effect
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setShowAscii((prev) => !prev)
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [])
-
-  const progress = Math.min(95, (elapsedTime / estimatedTime) * 100)
-  const remainingTime = Math.max(0, estimatedTime - elapsedTime)
+  const progress = Math.min(95, (elapsedTime / Math.max(estimatedTime, 1)) * 100)
+  const eta = Math.max(0, estimatedTime - elapsedTime)
 
   return (
-    <div className="space-y-6 animate-fade-up">
-      {/* Main ASCII Art Display */}
-      <div className={`relative transition-opacity duration-700 ${showAscii ? 'opacity-100' : 'opacity-60'}`}>
-        <div className="rounded-xl border-2 border-dashed border-blue-400/50 dark:border-blue-600/50 bg-gradient-to-br from-blue-50/50 via-cyan-50/30 to-purple-50/50 dark:from-blue-950/30 dark:via-cyan-950/20 dark:to-purple-950/30 p-8 backdrop-blur-sm">
-          <pre className="font-mono text-sm text-center text-blue-700 dark:text-blue-300 leading-relaxed select-none whitespace-pre">
-            {ASCII_FRAMES[currentFrame]}
-          </pre>
-          
-          {/* Animated dots */}
-          <div className="text-center mt-4">
-            <span className="text-2xl tracking-widest text-blue-600 dark:text-blue-400 animate-pulse">
-              {MINI_ASCII[miniSpinner]}
-            </span>
-          </div>
-        </div>
-
-        {/* Floating sparkles */}
-        <div className="absolute -top-2 -right-2 animate-bounce">
-          <Sparkles className="h-6 w-6 text-yellow-500" />
-        </div>
-        <div className="absolute -bottom-2 -left-2 animate-bounce delay-300">
-          <Sparkles className="h-5 w-5 text-pink-500" />
-        </div>
-      </div>
-
-      {/* Progress Bar with Gradient */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
-          <span className="font-medium">Progress</span>
-          <span className="tabular-nums">{Math.floor(progress)}%</span>
-        </div>
-        <div className="h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden relative">
-          <div
-            className="h-full bg-gradient-to-r from-blue-500 via-cyan-500 to-purple-500 transition-all duration-500 ease-out relative"
-            style={{ width: `${progress}%` }}
-          >
-            {/* Shimmer effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
-          </div>
-        </div>
-      </div>
-
-      {/* Research Steps */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400 mb-2">
-          <span className="font-medium">Research Pipeline</span>
-          {remainingTime > 0 && (
-            <span className="tabular-nums">~{remainingTime}s remaining</span>
-          )}
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2">
-          {RESEARCH_STEPS.map((step, index) => (
-            <div
-              key={index}
-              className={`
-                relative rounded-lg border px-3 py-2 text-xs font-medium transition-all duration-500
-                ${
-                  index <= currentStep
-                    ? 'border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/30 shadow-sm'
-                    : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900'
-                }
-              `}
-            >
-              <div className="flex items-center gap-2">
-                <span className={`text-base ${index === currentStep ? 'animate-bounce' : ''}`}>
-                  {step.icon}
-                </span>
-                <span className={index <= currentStep ? step.color : 'text-gray-500 dark:text-gray-400'}>
-                  {step.label}
-                </span>
-              </div>
-              
-              {/* Active indicator */}
-              {index === currentStep && (
-                <div className="absolute -top-1 -right-1 h-2 w-2 bg-blue-500 rounded-full animate-ping" />
-              )}
-              
-              {/* Completed checkmark */}
-              {index < currentStep && (
-                <div className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 rounded-full flex items-center justify-center text-[8px] text-white">
-                  ✓
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Fun Facts Carousel */}
-      <div className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-zinc-900/50 p-4">
-        <div className="text-center">
-          <p className="text-xs text-gray-600 dark:text-gray-400 italic">
-            💡 Did you know? This AI can analyze multiple sources simultaneously...
+    <div className="surface-panel relative overflow-hidden rounded-[var(--radius-card)] p-4 sm:p-6 animate-fade-up" aria-live="polite">
+      <div className="relative z-10 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-[var(--on-surface)]">Research in progress</p>
+          <p className="mt-1 text-xs text-[var(--on-surface-variant)]">
+            {RESEARCH_STEPS[activeStep]}{eta > 0 ? ` · ~${eta}s left` : ""}
           </p>
         </div>
+        <Sparkles className="h-4 w-4 text-[var(--primary-accent)]" />
       </div>
 
-      {/* Particle Effect Background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-1 bg-blue-400/30 rounded-full animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-              animationDuration: `${3 + Math.random() * 4}s`
-            }}
+      <div className="mt-4 h-2 overflow-hidden rounded-full bg-[hsl(var(--muted))]">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-[var(--primary-accent)] via-[#5a95ef] to-[#8ab4f8] transition-[width] duration-500"
+          style={{ width: `${Math.max(8, Math.floor(progress))}%` }}
+        />
+      </div>
+
+      <ol className="mt-4 space-y-2">
+        {RESEARCH_STEPS.map((step, index) => (
+          <li
+            key={step}
+            className={`rounded-[var(--radius-sm)] border px-3 py-2 text-xs transition-colors ${
+              index <= activeStep
+                ? "border-[color-mix(in_srgb,var(--primary-accent)_40%,transparent)] bg-[color-mix(in_srgb,var(--primary-accent)_12%,transparent)] text-[var(--on-surface)]"
+                : "border-[hsl(var(--border))] bg-[color-mix(in_srgb,var(--surface)_75%,transparent)] text-[var(--on-surface-variant)]"
+            }`}
+          >
+            {step}
+          </li>
+        ))}
+      </ol>
+
+      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+        {particles.map((particle) => (
+          <span
+            key={particle.key}
+            className="absolute h-1.5 w-1.5 rounded-full bg-[color-mix(in_srgb,var(--primary-accent)_45%,transparent)] animate-float"
+            style={{ left: particle.left, top: particle.top, animationDelay: particle.delay }}
           />
         ))}
       </div>

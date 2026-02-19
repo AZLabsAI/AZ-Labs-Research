@@ -1,30 +1,35 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+import { Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  "focus-ring inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius-pill)] text-sm font-medium transition-all duration-[var(--duration-fast)] ease-[var(--ease-standard)] disabled:pointer-events-none data-[disabled]:pointer-events-none disabled:opacity-60 data-[disabled]:opacity-60 disabled:saturate-50 data-[disabled]:saturate-50",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        default:
+          "bg-[var(--primary-accent)] text-white shadow-[var(--shadow-sm)] hover:-translate-y-px hover:bg-[var(--primary-accent-strong)] active:translate-y-0",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+          "bg-[hsl(var(--destructive))] text-[hsl(var(--destructive-foreground))] shadow-[var(--shadow-sm)] hover:-translate-y-px hover:brightness-95",
         outline:
-          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+          "border border-[hsl(var(--border))] bg-[var(--surface-container)] text-[var(--on-surface)] shadow-[var(--shadow-xs)] hover:border-[color-mix(in_srgb,var(--primary-accent)_30%,transparent)] hover:bg-[var(--surface-container-low)]",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-        code: "h-9 px-4 rounded-[10px] text-sm font-medium items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-[#36322F] text-[#fff] hover:bg-[#4a4542] disabled:bg-[#8c8885] disabled:hover:bg-[#8c8885] [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#171310,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(58,_33,_8,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#171310,_0px_1px_3px_0px_rgba(58,_33,_8,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#171310,_0px_1px_2px_0px_rgba(58,_33,_8,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100",
-        blue: "h-9 px-4 rounded-[10px] text-sm font-medium items-center transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 bg-blue-500 text-white hover:bg-blue-400 dark:bg-blue-600 dark:hover:bg-blue-500 dark:text-white [box-shadow:inset_0px_-2.108433723449707px_0px_0px_#1d4ed8,_0px_1.2048193216323853px_6.325301647186279px_0px_rgba(37,_99,_235,_58%)] hover:translate-y-[1px] hover:scale-[0.98] hover:[box-shadow:inset_0px_-1px_0px_0px_#1d4ed8,_0px_1px_3px_0px_rgba(37,_99,_235,_40%)] active:translate-y-[2px] active:scale-[0.97] active:[box-shadow:inset_0px_1px_1px_0px_#1d4ed8,_0px_1px_2px_0px_rgba(37,_99,_235,_30%)] disabled:shadow-none disabled:hover:translate-y-0 disabled:hover:scale-100",
+          "bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))] shadow-[var(--shadow-xs)] hover:bg-[color-mix(in_srgb,hsl(var(--secondary))_88%,var(--primary-accent)_12%)]",
+        ghost:
+          "text-[var(--on-surface-variant)] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]",
+        link: "text-[var(--primary-accent)] underline-offset-4 hover:underline",
+        code:
+          "h-9 rounded-[12px] bg-[#2f2a25] px-4 text-white shadow-[inset_0_-2px_0_#171310,0_1px_6px_rgba(40,25,12,0.35)] hover:-translate-y-px hover:bg-[#3c352f]",
+        blue:
+          "bg-[var(--primary-accent)] text-white shadow-[var(--shadow-sm)] hover:-translate-y-px hover:bg-[var(--primary-accent-strong)]",
       },
       size: {
         default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
+        sm: "h-9 px-3 text-xs",
+        lg: "h-11 px-6 text-sm",
         icon: "h-10 w-10",
       },
     },
@@ -39,17 +44,57 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean
+  loading?: boolean
+  loadingLabel?: string
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  (
+    {
+      className,
+      variant,
+      size,
+      asChild = false,
+      loading = false,
+      loadingLabel = "Loading",
+      children,
+      disabled,
+      ...props
+    },
+    ref
+  ) => {
     const Comp = asChild ? Slot : "button"
+    const isDisabled = Boolean(disabled || loading)
+
+    if (asChild) {
+      return (
+        <Comp
+          className={cn(buttonVariants({ variant, size, className }))}
+          ref={ref}
+          data-disabled={isDisabled ? "true" : undefined}
+          aria-disabled={isDisabled || undefined}
+          {...props}
+        >
+          {children}
+        </Comp>
+      )
+    }
+
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        data-loading={loading ? "true" : undefined}
+        data-disabled={isDisabled ? "true" : undefined}
+        aria-busy={loading || undefined}
+        aria-disabled={isDisabled || undefined}
+        disabled={isDisabled}
         {...props}
-      />
+      >
+        {loading && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+        <span>{children}</span>
+        {loading && <span className="sr-only">{loadingLabel}</span>}
+      </Comp>
     )
   }
 )

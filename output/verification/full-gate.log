@@ -1,0 +1,131 @@
+[gate] Starting full gate at 2026-02-19T12:56:41Z
+[gate] Running npm install
+
+up to date, audited 564 packages in 2s
+
+250 packages are looking for funding
+  run `npm fund` for details
+
+22 vulnerabilities (3 low, 3 moderate, 15 high, 1 critical)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+[gate] Running lint
+
+> az-labs-research@0.1.0 lint
+> next lint
+
+
+./app/api/az-labs-research/search/route.ts
+379:17  Warning: 'conversationPreview' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+420:20  Warning: 'followUpError' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/auth/login/page.tsx
+39:14  Warning: 'err' is defined but never used.  @typescript-eslint/no-unused-vars
+66:14  Warning: 'err' is defined but never used.  @typescript-eslint/no-unused-vars
+88:14  Warning: 'err' is defined but never used.  @typescript-eslint/no-unused-vars
+110:14  Warning: 'err' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/profile/page.tsx
+37:6  Warning: React Hook useEffect has a missing dependency: 'fetchProfile'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+245:21  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/use-citation-tooltip.tsx
+144:6  Warning: React Hook useEffect has missing dependencies: 'handleMouseOut' and 'handleMouseOver'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/trading-view-widget.tsx
+48:22  Warning: The ref value 'containerRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'containerRef.current' to a variable inside the effect, and use that variable in the cleanup function.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+[gate] Running build
+
+> az-labs-research@0.1.0 build
+> next build
+
+   ▲ Next.js 15.3.2
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 1000ms
+   Linting and checking validity of types ...
+
+./app/api/az-labs-research/search/route.ts
+379:17  Warning: 'conversationPreview' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+420:20  Warning: 'followUpError' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/auth/login/page.tsx
+39:14  Warning: 'err' is defined but never used.  @typescript-eslint/no-unused-vars
+66:14  Warning: 'err' is defined but never used.  @typescript-eslint/no-unused-vars
+88:14  Warning: 'err' is defined but never used.  @typescript-eslint/no-unused-vars
+110:14  Warning: 'err' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/profile/page.tsx
+37:6  Warning: React Hook useEffect has a missing dependency: 'fetchProfile'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+245:21  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+./app/use-citation-tooltip.tsx
+144:6  Warning: React Hook useEffect has missing dependencies: 'handleMouseOut' and 'handleMouseOver'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./components/trading-view-widget.tsx
+48:22  Warning: The ref value 'containerRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'containerRef.current' to a variable inside the effect, and use that variable in the cleanup function.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules
+   Collecting page data ...
+   Generating static pages (0/11) ...
+   Generating static pages (2/11) 
+   Generating static pages (5/11) 
+   Generating static pages (8/11) 
+ ✓ Generating static pages (11/11)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                 Size  First Load JS
+┌ ○ /                                     249 kB         395 kB
+├ ○ /_not-found                            992 B         107 kB
+├ ƒ /api/az-labs-research/check-env        150 B         106 kB
+├ ƒ /api/az-labs-research/search           150 B         106 kB
+├ ○ /auth/auth-code-error                1.99 kB         121 kB
+├ ƒ /auth/callback                         150 B         106 kB
+├ ○ /auth/login                          6.87 kB         176 kB
+├ ○ /dashboard                           3.26 kB         173 kB
+└ ○ /profile                             4.35 kB         183 kB
++ First Load JS shared by all             106 kB
+  ├ chunks/1684-8982c38b45b86a8a.js      46.4 kB
+  ├ chunks/4bd1b696-b7e1eae3b65cdea8.js  53.2 kB
+  └ other shared chunks (total)          6.19 kB
+
+
+ƒ Middleware                             79.3 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+[gate] Running verify
+
+> az-labs-research@0.1.0 verify
+> bash scripts/verify.sh
+
+[verify] Running repository verification checks
+[verify] No npm test script found; skipping tests
+[verify] Capturing visual snapshots
+
+> az-labs-research@0.1.0 snapshots
+> bash scripts/capture-visual-snapshots.sh
+
+Navigating to http://127.0.0.1:3210/
+Capturing screenshot into output/playwright/landing-desktop.png
+Navigating to http://127.0.0.1:3210/?preview=chat-loading
+Capturing screenshot into output/playwright/chat-loading-desktop.png
+Navigating to http://127.0.0.1:3210/?preview=chat-ready
+Capturing screenshot into output/playwright/chat-ready-desktop.png
+Navigating to http://127.0.0.1:3210/?preview=chat-error
+Capturing screenshot into output/playwright/chat-error-desktop.png
+Navigating to http://127.0.0.1:3210/?preview=chat-ready
+Capturing screenshot into output/playwright/chat-ready-mobile.png
+Visual snapshots captured in output/playwright
+[verify] Verification complete
+[gate] Full gate passed

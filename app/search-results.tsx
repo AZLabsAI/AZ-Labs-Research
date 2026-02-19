@@ -1,28 +1,34 @@
-'use client'
+"use client"
 
-import { ExternalLink, FileText, Calendar, User, Globe } from 'lucide-react'
-import { Card } from '@/components/ui/card'
-import { SearchResult } from './types'
-import Image from 'next/image'
-import { CharacterCounter } from './character-counter'
-import { isValidImageUrl } from '@/lib/image-utils'
+import { ExternalLink, FileText, Calendar, User, Globe } from "lucide-react"
+import { Card } from "@/components/ui/card"
+import { SearchResult } from "./types"
+import Image from "next/image"
+import { CharacterCounter } from "./character-counter"
+import { isValidImageUrl } from "@/lib/image-utils"
 
 interface SearchResultsProps {
   results: SearchResult[]
   isLoading: boolean
 }
 
+function SearchResultSkeleton() {
+  return (
+    <Card className="p-4">
+      <div className="mb-3 h-32 rounded-[var(--radius-sm)] bg-[hsl(var(--muted))]" />
+      <div className="mb-2 h-4 w-3/4 rounded bg-[hsl(var(--muted))]" />
+      <div className="mb-2 h-3 w-full rounded bg-[hsl(var(--muted))]" />
+      <div className="h-3 w-5/6 rounded bg-[hsl(var(--muted))]" />
+    </Card>
+  )
+}
+
 export function SearchResults({ results, isLoading }: SearchResultsProps) {
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3" aria-label="Loading search results">
         {[1, 2, 3].map((i) => (
-          <Card key={i} className="p-4 animate-pulse bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700">
-            <div className="h-32 bg-gray-200 dark:bg-zinc-700 rounded-lg mb-3"></div>
-            <div className="h-4 bg-gray-200 dark:bg-zinc-700 rounded w-3/4 mb-2"></div>
-            <div className="h-3 bg-gray-200 dark:bg-zinc-700 rounded w-full mb-2"></div>
-            <div className="h-3 bg-gray-200 dark:bg-zinc-700 rounded w-5/6"></div>
-          </Card>
+          <SearchResultSkeleton key={i} />
         ))}
       </div>
     )
@@ -30,31 +36,26 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
 
   if (results.length === 0) {
     return (
-      <Card className="p-8 text-center bg-gray-50 dark:bg-zinc-700 border-gray-200 dark:border-gray-600">
-        <FileText className="h-12 w-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-        <p className="text-gray-600 dark:text-gray-400">No results found. Try a different search query.</p>
+      <Card className="items-center gap-3 p-8 text-center">
+        <FileText className="h-10 w-10 text-[var(--on-surface-variant)]" />
+        <p className="text-sm text-[var(--on-surface-variant)]">No source results yet. Try broadening your query.</p>
       </Card>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {results.map((result, index) => (
         <a
-          key={index}
+          key={`${result.url}-${index}`}
           href={result.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="group block opacity-0 animate-fade-up"
-          style={{
-            animationDelay: `${index * 100}ms`,
-            animationFillMode: 'forwards'
-          }}
+          className="group block focus-ring rounded-[var(--radius-card)]"
         >
-          <Card className="h-full p-4 bg-white dark:bg-zinc-800 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-200 hover:shadow-lg hover:-translate-y-1">
-            {/* Image/Thumbnail */}
+          <Card className="h-full p-4 transition-all duration-[var(--duration-fast)] hover:-translate-y-0.5 hover:border-[color-mix(in_srgb,var(--primary-accent)_40%,transparent)] hover:shadow-[var(--shadow-md)]">
             {result.image && isValidImageUrl(result.image) && (
-              <div className="relative h-32 mb-3 rounded-lg overflow-hidden bg-gray-100 dark:bg-zinc-700">
+              <div className="relative mb-3 h-32 overflow-hidden rounded-[var(--radius-sm)] bg-[hsl(var(--muted))]">
                 <Image
                   src={result.image}
                   alt={result.title}
@@ -63,14 +64,13 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
                   unoptimized
                   onError={(e) => {
                     const target = e.target as HTMLImageElement
-                    target.style.display = 'none'
+                    target.style.display = "none"
                   }}
                 />
               </div>
             )}
-            
-            {/* Site info */}
-            <div className="flex items-center gap-2 mb-2">
+
+            <div className="mb-2 flex items-center gap-2 text-xs text-[var(--on-surface-variant)]">
               {result.favicon && isValidImageUrl(result.favicon) ? (
                 <Image
                   src={result.favicon}
@@ -81,52 +81,44 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
                   unoptimized
                   onError={(e) => {
                     const target = e.target as HTMLImageElement
-                    target.style.display = 'none'
+                    target.style.display = "none"
                   }}
                 />
               ) : (
-                <Globe className="h-4 w-4 text-gray-400" />
+                <Globe className="h-4 w-4" />
               )}
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                {result.siteName || new URL(result.url).hostname}
-              </span>
+              <span className="truncate">{result.siteName || new URL(result.url).hostname}</span>
             </div>
 
-            {/* Title */}
-            <h3 className="font-semibold text-sm mb-1 line-clamp-2 text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+            <h3 className="mb-2 line-clamp-2 text-sm font-semibold text-[var(--on-surface)] transition-colors group-hover:text-[var(--primary-accent)]">
               {result.title}
             </h3>
 
-            {/* Character count */}
             <div className="mb-2">
-              <CharacterCounter 
-                targetCount={result.markdown?.length || result.content?.length || 0} 
-                duration={2000}
+              <CharacterCounter
+                targetCount={result.markdown?.length || result.content?.length || 0}
+                duration={1400}
               />
             </div>
 
-            {/* Description */}
             {result.description && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3 mb-3">
-                {result.description}
-              </p>
+              <p className="mb-3 line-clamp-3 text-sm text-[var(--on-surface-variant)]">{result.description}</p>
             )}
 
-            {/* Metadata */}
-            <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-3 text-xs text-[var(--on-surface-variant)]">
               {result.publishedDate && (
-                <span className="flex items-center gap-1">
+                <span className="inline-flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
                   {new Date(result.publishedDate).toLocaleDateString()}
                 </span>
               )}
               {result.author && (
-                <span className="flex items-center gap-1">
+                <span className="inline-flex items-center gap-1">
                   <User className="h-3 w-3" />
                   {result.author}
                 </span>
               )}
-              <ExternalLink className="h-3 w-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+              <ExternalLink className="ml-auto h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
             </div>
           </Card>
         </a>

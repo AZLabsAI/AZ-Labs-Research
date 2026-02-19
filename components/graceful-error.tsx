@@ -1,9 +1,9 @@
-'use client'
+"use client"
 
-import React from 'react'
-import { AlertCircle, RefreshCw, Home } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import Link from 'next/link'
+import React from "react"
+import { AlertCircle, RefreshCw, Home } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 interface GracefulErrorProps {
   error: Error & { digest?: string; statusCode?: number }
@@ -12,73 +12,60 @@ interface GracefulErrorProps {
 
 export function GracefulError({ error, reset }: GracefulErrorProps) {
   const statusCode = error.statusCode || 500
-  
+
   const errorMessages: Record<number, { title: string; description: string }> = {
     401: {
       title: "Authentication Required",
-      description: "It looks like there's an issue with your API key. Please check your configuration."
+      description: "There is an issue with your API key. Verify your configuration and try again.",
     },
     402: {
       title: "Out of Credits",
-      description: "You've used up your Firecrawl credits. Time to upgrade your plan!"
+      description: "Your Firecrawl credits are exhausted. Update your plan and retry.",
     },
     429: {
-      title: "Slow Down There!",
-      description: "You're making requests too quickly. Take a breather and try again in a moment."
+      title: "Rate Limited",
+      description: "Too many requests were sent in a short period. Wait briefly, then retry.",
     },
     500: {
-      title: "Oops! Something went wrong",
-      description: "We encountered an unexpected error. Don't worry, it's not you, it's us."
+      title: "Unexpected Error",
+      description: "The request failed unexpectedly. Retry once, then check logs if it persists.",
     },
     504: {
-      title: "Taking Too Long",
-      description: "This request is taking longer than expected. Try again with less content."
-    }
+      title: "Request Timed Out",
+      description: "This request took too long. Try a narrower prompt or shorter source list.",
+    },
   }
-  
+
   const { title, description } = errorMessages[statusCode] || errorMessages[500]
-  
+
   return (
-    <div className="min-h-[400px] flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 dark:bg-red-900/20 mb-4">
-            <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
-          </div>
-          
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-            {title}
-          </h2>
-          
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
-            {description}
-          </p>
-          
-          {error.digest && (
-            <p className="text-xs text-gray-500 dark:text-gray-500 mb-6">
-              Error ID: {error.digest}
-            </p>
+    <div className="flex min-h-[420px] items-center justify-center p-4">
+      <div className="surface-panel w-full max-w-md rounded-[var(--radius-card)] p-6 text-center">
+        <div className="mx-auto mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-[hsl(var(--destructive))/0.15]">
+          <AlertCircle className="h-7 w-7 text-[hsl(var(--destructive))]" />
+        </div>
+
+        <h2 className="text-xl font-semibold text-[var(--on-surface)]">{title}</h2>
+        <p className="mt-2 text-sm text-[var(--on-surface-variant)]">{description}</p>
+
+        {error.digest && (
+          <p className="mt-4 text-xs text-[var(--on-surface-variant)]">Error ID: {error.digest}</p>
+        )}
+
+        <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+          {reset && (
+            <Button onClick={reset} variant="outline">
+              <RefreshCw className="h-4 w-4" />
+              Try again
+            </Button>
           )}
-          
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            {reset && (
-              <Button
-                onClick={reset}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Try again
-              </Button>
-            )}
-            
+
+          <Button asChild>
             <Link href="/">
-              <Button variant="default" className="flex items-center gap-2">
-                <Home className="h-4 w-4" />
-                Go home
-              </Button>
+              <Home className="h-4 w-4" />
+              Go home
             </Link>
-          </div>
+          </Button>
         </div>
       </div>
     </div>
