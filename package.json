@@ -6,7 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "snapshots": "bash scripts/capture-visual-snapshots.sh",
+    "verify": "bash scripts/verify.sh",
+    "gate": "bash scripts/full-gate.sh"
   },
   "dependencies": {
     "@ai-sdk/groq": "^2.0.11",

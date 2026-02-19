@@ -1,14 +1,20 @@
+import Link from "next/link"
+
 export function SiteFooter() {
   return (
-    <footer className="border-t border-gray-200 dark:border-gray-800 mt-12">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-zinc-600 dark:text-zinc-400">
-        <div className="text-center sm:text-left">
-          © {new Date().getFullYear()} AZ Labs Research
-        </div>
+    <footer className="mt-16 border-t border-[color-mix(in_srgb,var(--outline)_45%,transparent)]" role="contentinfo">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-[var(--on-surface-variant)] sm:flex-row sm:px-6 lg:px-8">
+        <div className="text-center sm:text-left">© {new Date().getFullYear()} AZ Labs Research</div>
         <div className="flex items-center gap-4">
-          <a href="#" className="hover:text-zinc-900 dark:hover:text-zinc-200">About</a>
-          <a href="#" className="hover:text-zinc-900 dark:hover:text-zinc-200">Changelog</a>
-          <a href="#" className="hover:text-zinc-900 dark:hover:text-zinc-200">Privacy</a>
+          <Link href="/" className="focus-ring rounded px-1 py-0.5 hover:text-[var(--on-surface)]">
+            Home
+          </Link>
+          <Link href="/auth/login" className="focus-ring rounded px-1 py-0.5 hover:text-[var(--on-surface)]">
+            Sign In
+          </Link>
+          <a href="https://www.firecrawl.dev" target="_blank" rel="noopener noreferrer" className="focus-ring rounded px-1 py-0.5 hover:text-[var(--on-surface)]">
+            Firecrawl
+          </a>
         </div>
       </div>
     </footer>
