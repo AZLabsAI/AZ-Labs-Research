@@ -9,6 +9,9 @@ export function SiteFooter() {
           <Link href="/" className="focus-ring rounded px-1 py-0.5 hover:text-[var(--on-surface)]">
             Home
           </Link>
+          <a href="https://azlabs.ai/products/research" className="focus-ring rounded px-1 py-0.5 hover:text-[var(--on-surface)]">
+            AZ Labs directory
+          </a>
           <Link href="/auth/login" className="focus-ring rounded px-1 py-0.5 hover:text-[var(--on-surface)]">
             Sign In
           </Link>
