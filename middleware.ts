@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { safeNext } from '@/lib/auth/azlabs'
 
 export async function middleware(req: NextRequest) {
   let res = NextResponse.next({
@@ -66,13 +67,14 @@ export async function middleware(req: NextRequest) {
     // If accessing a protected route without authentication, redirect to login
     if (isProtectedRoute && !session) {
       const redirectUrl = new URL('/auth/login', req.url)
-      redirectUrl.searchParams.set('next', pathname)
+      redirectUrl.searchParams.set('next', safeNext(`${pathname}${req.nextUrl.search}`))
       return NextResponse.redirect(redirectUrl)
     }
 
     // If accessing login page while authenticated, redirect to home
     if (pathname === '/auth/login' && session) {
-      return NextResponse.redirect(new URL('/', req.url))
+      const destination = safeNext(req.nextUrl.searchParams.get('next'))
+      return NextResponse.redirect(new URL(destination, req.url))
     }
 
     return res
