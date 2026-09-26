@@ -46,7 +46,7 @@ Open http://localhost:3000
 ## Get API Keys
 
 - [Firecrawl](https://firecrawl.dev) - For web scraping and multi-source search
-- [Groq](https://groq.com) - For AI response generation
+- [Meta Model API](https://dev.meta.ai) - For AI response generation (Muse Spark)
 
 ## Technology Stack
 
