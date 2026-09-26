@@ -21,7 +21,7 @@ cp .env.example .env.local
 Add your keys to `.env.local`:
 ```
 FIRECRAWL_API_KEY=fc-your-api-key
-GROQ_API_KEY=gsk_your-groq-api-key
+META_API_KEY=your-meta-model-api-key
 ```
 
 ## Run
@@ -51,7 +51,7 @@ Open http://localhost:3000
 ## Technology Stack
 
 - **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
-- **AI/ML**: Groq AI (Kimi K2 Instruct model), AI SDK v5
+- **AI/ML**: Meta Model API (Muse Spark 1.3 contributor), AI SDK v5
 - **Data Sources**: Firecrawl API for web/news/image search
 - **Charts**: TradingView widgets for stock data
 - **UI Components**: shadcn/ui, Lucide React icons

@@ -12,7 +12,7 @@
     "gate": "bash scripts/full-gate.sh"
   },
   "dependencies": {
-    "@ai-sdk/groq": "^2.0.11",
+    "@ai-sdk/openai-compatible": "^1.0.56",
     "@ai-sdk/react": "^2.0.20",
     "@mendable/firecrawl-js": "^3.0.3",
     "@radix-ui/react-dialog": "^1.1.4",

@@ -20,7 +20,7 @@ pnpm lint         # Run Next.js linting
 - **Next.js 15.3.2** with App Router and React 19
 - **AI SDK v5** for streaming responses with custom data parts
 - **Firecrawl API** for web scraping and multi-source search (web, news, images)  
-- **Groq AI** with Kimi K2 Instruct model for response generation
+- **Meta Model API** (Muse Spark 1.3 contributor) for response generation
 - **TradingView** integration for stock charts when company mentions are detected
 - **Tailwind CSS** with shadcn/ui components for styling
 
@@ -33,7 +33,7 @@ pnpm lint         # Run Next.js linting
 1. **Search initiation** triggers Firecrawl v2 API call with `sources: ['web', 'news', 'images']`
 2. **Content intelligence** via `selectRelevantContent()` filters scraped content based on query relevance
 3. **Stock detection** uses `detectCompanyTicker()` with extensive company name mappings
-4. **AI streaming** sends context to Groq AI and streams markdown responses with citations
+4. **AI streaming** sends context to Muse Spark via the Meta Model API and streams markdown responses with citations
 5. **Follow-up generation** creates contextual questions after response completion
 
 ### Component Structure
@@ -48,7 +48,7 @@ pnpm lint         # Run Next.js linting
 Required API keys (stored in `.env.local`):
 ```
 FIRECRAWL_API_KEY=fc-your-api-key  # For data collection and web scraping
-GROQ_API_KEY=gsk_your-groq-api-key  # For AI response generation
+META_API_KEY=your-meta-model-api-key  # Meta Model API (Muse Spark) for answers; optional META_MODEL, META_REASONING_EFFORT
 ```
 
 ### State Management Patterns

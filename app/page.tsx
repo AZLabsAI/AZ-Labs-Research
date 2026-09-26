@@ -168,7 +168,7 @@ export default function AZLabsResearchPage() {
   const [firecrawlApiKey, setFirecrawlApiKey] = useState<string>("")
   const [hasApiKey, setHasApiKey] = useState<boolean>(false)
   const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false)
-  const [, setIsCheckingEnv] = useState<boolean>(true)
+  const [isCheckingEnv, setIsCheckingEnv] = useState<boolean>(true)
   const [pendingQuery, setPendingQuery] = useState<string>("")
   const [input, setInput] = useState<string>("")
 
@@ -296,6 +296,20 @@ export default function AZLabsResearchPage() {
     void checkApiKey()
   }, [isPreview])
 
+  useEffect(() => {
+    if (isCheckingEnv || !pendingQuery) return
+    if (hasApiKey) {
+      setHasSearched(true)
+      sendMessage({ text: pendingQuery })
+      setPendingQuery("")
+      setInput("")
+    } else {
+      setShowApiKeyModal(true)
+    }
+    // sendMessage is stable for the chat instance; re-running on it would resend the query.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCheckingEnv, hasApiKey, pendingQuery])
+
   const handleApiKeySubmit = () => {
     if (!firecrawlApiKey.trim()) return
 
@@ -320,7 +334,8 @@ export default function AZLabsResearchPage() {
 
     if (!hasApiKey) {
       setPendingQuery(query)
-      setShowApiKeyModal(true)
+      // Until the server key check returns, hold the query rather than asking for a key.
+      if (!isCheckingEnv) setShowApiKeyModal(true)
       return
     }
 

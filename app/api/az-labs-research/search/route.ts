@@ -1,9 +1,17 @@
 import { NextResponse } from 'next/server'
-import { createGroq } from '@ai-sdk/groq'
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import { streamText, generateText, createUIMessageStream, createUIMessageStreamResponse, convertToModelMessages } from 'ai'
 import type { ModelMessage } from 'ai'
 import { detectCompanyTicker } from '@/lib/company-ticker-map'
 import { selectRelevantContent } from '@/lib/content-selection'
+
+// Edge runs have no 10s wall-clock cap on streamed responses, which search plus Muse reasoning exceeds.
+export const runtime = 'edge'
+
+const DEFAULT_META_MODEL = 'muse-spark-1.3-contributor'
+// Muse Spark reasons before it answers; at default effort the first token took ~19s on a
+// full source set, past the Netlify function limit, so answers default to low effort.
+const ANSWER_REASONING_EFFORT = process.env.META_REASONING_EFFORT || 'low'
 
 export async function POST(request: Request) {
   const requestId = Math.random().toString(36).substring(7)
@@ -32,19 +40,22 @@ export async function POST(request: Request) {
 
     // Use API key from request body if provided, otherwise fall back to environment variable
     const firecrawlApiKey = body.firecrawlApiKey || process.env.FIRECRAWL_API_KEY
-    const groqApiKey = process.env.GROQ_API_KEY
+    const metaApiKey = process.env.META_API_KEY
+    const metaModel = process.env.META_MODEL || DEFAULT_META_MODEL
     
     if (!firecrawlApiKey) {
       return NextResponse.json({ error: 'Firecrawl API key not configured' }, { status: 500 })
     }
     
-    if (!groqApiKey) {
-      return NextResponse.json({ error: 'Groq API key not configured' }, { status: 500 })
+    if (!metaApiKey) {
+      return NextResponse.json({ error: 'Meta Model API key not configured' }, { status: 500 })
     }
 
-    // Configure Groq with the OSS 120B model
-    const groq = createGroq({
-      apiKey: groqApiKey
+    // Meta Model API (Muse Spark) speaks the OpenAI chat-completions format.
+    const meta = createOpenAICompatible({
+      name: 'meta',
+      baseURL: process.env.META_API_BASE_URL || 'https://api.meta.ai/v1',
+      apiKey: metaApiKey,
     })
 
     // Always perform a fresh search for each query to ensure relevant results
@@ -361,12 +372,12 @@ export async function POST(request: Request) {
             ]
           }
           
-          // Stream the text generation using Groq's Kimi K2 Instruct model
           const result = streamText({
-            model: groq('moonshotai/kimi-k2-instruct'),
+            model: meta(metaModel),
             messages: aiMessages,
             temperature: 0.7,
-            maxRetries: 2
+            maxRetries: 2,
+            providerOptions: { meta: { reasoningEffort: ANSWER_REASONING_EFFORT } }
           })
           
           // Merge the AI stream into our UIMessage stream
@@ -387,7 +398,7 @@ export async function POST(request: Request) {
             
           try {
             const followUpResponse = await generateText({
-              model: groq('moonshotai/kimi-k2-instruct'),
+              model: meta(metaModel),
               messages: [
                 {
                   role: 'system',
@@ -401,7 +412,8 @@ export async function POST(request: Request) {
                 }
               ],
               temperature: 0.7,
-              maxRetries: 2
+              maxRetries: 2,
+              providerOptions: { meta: { reasoningEffort: 'minimal' } }
             })
             
             // Process follow-up questions
