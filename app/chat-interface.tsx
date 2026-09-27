@@ -12,6 +12,9 @@ import {
   Download,
   ExternalLink,
   Trash2,
+  ArrowDown,
+  MessagesSquare,
+  PanelRightClose,
 } from "lucide-react"
 import Image from "next/image"
 import { type UIMessage } from "ai"
@@ -26,6 +29,9 @@ import { NewsResults } from "./news-results"
 import { ImageResults } from "./image-results"
 import { LoadingAnimation } from "./loading-animation"
 import { CharacterCounter } from "./character-counter"
+import { AudioNarration } from "./audio-player"
+import { ThreadsRail } from "./threads-rail"
+import type { ThreadSummary } from "@/lib/threads"
 
 interface MessageData {
   sources: SearchResult[]
@@ -52,14 +58,24 @@ function getMessageContent(message: UIMessage): string {
     .join("")
 }
 
+function safeLinkHostname(url: string): string {
+  try {
+    return new URL(url).hostname.replace("www.", "")
+  } catch {
+    return url
+  }
+}
+
 function SourceTiles({
   title,
   sources,
   isLoading,
+  compact = false,
 }: {
   title: string
   sources: SearchResult[]
   isLoading?: boolean
+  compact?: boolean
 }) {
   return (
     <section className="space-y-3" aria-label={title}>
@@ -73,7 +89,46 @@ function SourceTiles({
         )}
       </div>
 
-      {isLoading && (
+      {compact && (
+        <ol className="space-y-1.5">
+          {isLoading &&
+            [1, 2, 3, 4].map((index) => (
+              <li
+                key={index}
+                className="flex items-center gap-2.5 rounded-[var(--radius-md)] border border-[hsl(var(--border))] bg-[var(--surface-container-low)] px-3 py-2.5 animate-pulse"
+              >
+                <div className="h-4 w-4 shrink-0 rounded bg-[hsl(var(--muted))]" />
+                <div className="h-3 flex-1 rounded bg-[hsl(var(--muted))]" />
+              </li>
+            ))}
+          {!isLoading &&
+            sources.slice(0, 6).map((source, index) => (
+              <li key={`${source.url}-${index}`} className="animate-fade-up" style={{ animationDelay: `${index * 50}ms` }}>
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="focus-ring group flex items-center gap-2.5 rounded-[var(--radius-md)] border border-[hsl(var(--border))] bg-[var(--surface-container-low)] px-3 py-2.5 transition-colors duration-[var(--duration-fast)] hover:border-[color-mix(in_srgb,var(--primary-accent)_38%,transparent)]"
+                >
+                  <span className="font-mono text-[11px] font-semibold text-[var(--primary-accent)]">
+                    {index + 1}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] font-medium text-[var(--on-surface)]">
+                      {source.title}
+                    </span>
+                    <span className="block truncate text-[11px] text-[var(--on-surface-variant)]">
+                      {source.siteName || (source.url ? safeLinkHostname(source.url) : "")}
+                    </span>
+                  </span>
+                  <ExternalLink className="h-3 w-3 shrink-0 text-[var(--on-surface-variant)] opacity-0 transition-opacity group-hover:opacity-100" />
+                </a>
+              </li>
+            ))}
+        </ol>
+      )}
+
+      {!compact && isLoading && (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
           {[1, 2, 3, 4, 5].map((index) => (
             <Card key={index} className="h-28 p-3">
@@ -85,13 +140,13 @@ function SourceTiles({
         </div>
       )}
 
-      {!isLoading && sources.length === 0 && (
+      {!compact && !isLoading && sources.length === 0 && (
         <Card className="p-4 text-sm text-[var(--on-surface-variant)]">
           No sources were returned for this response.
         </Card>
       )}
 
-      {!isLoading && sources.length > 0 && (
+      {!compact && !isLoading && sources.length > 0 && (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
           {sources.slice(0, 5).map((source, index) => (
             <a
@@ -99,7 +154,8 @@ function SourceTiles({
               href={source.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="focus-ring group block rounded-[var(--radius-card)]"
+              className="focus-ring group block rounded-[var(--radius-card)] animate-fade-up"
+              style={{ animationDelay: `${index * 60}ms` }}
             >
               <Card className="relative h-28 overflow-hidden p-3 transition-all duration-[var(--duration-fast)] hover:border-[color-mix(in_srgb,var(--primary-accent)_38%,transparent)] hover:shadow-[var(--shadow-sm)]">
                 {source.image && (
@@ -145,7 +201,7 @@ function SourceTiles({
                   </p>
 
                   <CharacterCounter
-                    targetCount={source.markdown?.length || source.content?.length || 0}
+                    targetCount={source.contentLength ?? source.markdown?.length ?? source.content?.length ?? 0}
                     duration={1200}
                   />
                 </div>
@@ -174,12 +230,13 @@ function FollowUpSection({
         Follow-ups
       </div>
       <div className="space-y-2">
-        {followUps.map((question) => (
+        {followUps.map((question, index) => (
           <Button
             key={question}
             type="button"
             variant="outline"
-            className="h-auto w-full justify-start rounded-[var(--radius-md)] px-3 py-2 text-left"
+            className="h-auto w-full justify-start rounded-[var(--radius-md)] px-3 py-2 text-left animate-fade-up"
+            style={{ animationDelay: `${Math.min(index, 6) * 50}ms` }}
             onClick={() => onAsk(question)}
           >
             <Plus className="mt-0.5 h-4 w-4 flex-shrink-0" />
@@ -198,6 +255,7 @@ function AnswerSection({
   onCopy,
   onRewrite,
   showRewrite,
+  audioKey,
 }: {
   answer: string
   sources: SearchResult[]
@@ -205,15 +263,17 @@ function AnswerSection({
   onCopy: () => void
   onRewrite?: () => void
   showRewrite?: boolean
+  audioKey: string
 }) {
   return (
-    <section className="space-y-3" aria-label="Answer">
-      <div className="flex items-center justify-between">
+    <section className="space-y-3 animate-fade-up" aria-label="Answer">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-sm font-semibold text-[var(--on-surface)]">
           <Sparkles className="h-4 w-4" />
           Answer
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-1">
+          <AudioNarration text={answer} audioKey={audioKey} />
           <button
             onClick={onCopy}
             className="focus-ring rounded-md p-1.5 text-[var(--on-surface-variant)] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]"
@@ -256,6 +316,11 @@ interface ChatInterfaceProps {
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void
   messageData?: Map<number, MessageData>
   currentTicker?: string | null
+  threads: ThreadSummary[]
+  activeThreadId: string
+  onSelectThread: (id: string) => void
+  onNewThread: () => void
+  onDeleteThread: (id: string) => void
 }
 
 export function ChatInterface({
@@ -271,12 +336,22 @@ export function ChatInterface({
   handleSubmit,
   messageData,
   currentTicker,
+  threads,
+  activeThreadId,
+  onSelectThread,
+  onNewThread,
+  onDeleteThread,
 }: ChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const stickToBottomRef = useRef(true)
 
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null)
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false)
+  const [threadsCollapsed, setThreadsCollapsed] = useState(false)
+  const [evidenceCollapsed, setEvidenceCollapsed] = useState(false)
+  const [mobileThreadsOpen, setMobileThreadsOpen] = useState(false)
 
   const theme =
     typeof window !== "undefined" && document.documentElement.classList.contains("dark")
@@ -327,12 +402,37 @@ export function ChatInterface({
     }
   }, [messages, messageData])
 
+  const scrollToLatest = (behavior: ScrollBehavior = "smooth") => {
+    const container = scrollContainerRef.current
+    if (!container) return
+    stickToBottomRef.current = true
+    setShowJumpToLatest(false)
+    container.scrollTo({ top: container.scrollHeight, behavior })
+  }
+
+  const handleScroll = () => {
+    const container = scrollContainerRef.current
+    if (!container) return
+    const distanceToBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight
+    const sticking = distanceToBottom < 140
+    stickToBottomRef.current = sticking
+    setShowJumpToLatest(!sticking)
+  }
+
   useEffect(() => {
-    if (!scrollContainerRef.current) return
+    // Only follow new content while the user is already at the bottom. If they
+    // scrolled up to read history, never yank them back down.
+    if (!stickToBottomRef.current) return
+    const container = scrollContainerRef.current
+    if (!container) return
     const id = requestAnimationFrame(() => {
-      scrollContainerRef.current?.scrollTo({
-        top: scrollContainerRef.current.scrollHeight,
-        behavior: "smooth",
+      const target = scrollContainerRef.current
+      if (!target) return
+      const distance = target.scrollHeight - target.scrollTop - target.clientHeight
+      target.scrollTo({
+        top: target.scrollHeight,
+        behavior: distance > 1200 ? "auto" : "smooth",
       })
     })
 
@@ -342,6 +442,8 @@ export function ChatInterface({
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!input.trim() || isLoading) return
+    stickToBottomRef.current = true
+    setShowJumpToLatest(false)
     handleSubmit(e)
   }
 
@@ -433,7 +535,7 @@ export function ChatInterface({
   }
 
   const clearChat = () => {
-    window.location.href = "/"
+    onNewThread()
   }
 
   const defaultSteps = ["Queuing request", "Finding sources", "Fetching content", "Cross-checking", "Composing answer"]
@@ -510,15 +612,55 @@ export function ChatInterface({
 
   const showCurrentSections = Boolean(conversation.currentAnswer) || (!conversation.isWaitingForResponse && !isLoading)
 
+  const evidenceCount = sources.length + newsResults.length + imageResults.length
+  const showEvidence = newsResults.length > 0 || imageResults.length > 0 || sources.length > 0 || (isLoading && messages.length > 0)
+
   return (
-    <div className="flex h-full gap-5" style={{ height: "calc(100vh - 80px)" }}>
-      <div className="relative flex min-w-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 gap-4">
+      <ThreadsRail
+        threads={threads}
+        activeId={activeThreadId}
+        collapsed={threadsCollapsed}
+        onToggleCollapse={() => setThreadsCollapsed((value) => !value)}
+        onSelect={onSelectThread}
+        onNew={onNewThread}
+        onDelete={onDeleteThread}
+      />
+
+      {mobileThreadsOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Research threads">
+          <div
+            className="absolute inset-0 bg-black/50 animate-fade-in"
+            onClick={() => setMobileThreadsOpen(false)}
+          />
+          <div className="absolute inset-y-0 left-0 w-72 max-w-[85vw] bg-[var(--surface)] shadow-[var(--shadow-lg)] animate-slide-in-right">
+            <ThreadsRail
+              threads={threads}
+              activeId={activeThreadId}
+              collapsed={false}
+              onToggleCollapse={() => setMobileThreadsOpen(false)}
+              onSelect={(id) => {
+                setMobileThreadsOpen(false)
+                onSelectThread(id)
+              }}
+              onNew={() => {
+                setMobileThreadsOpen(false)
+                onNewThread()
+              }}
+              onDelete={onDeleteThread}
+              alwaysVisible
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
         {(conversation.isWaitingForResponse || isLoading) && (
           <div className="pointer-events-none absolute left-0 right-0 top-0 z-20">
             <div className="mx-auto max-w-4xl px-4">
               <div className="h-[3px] overflow-hidden rounded-full bg-[hsl(var(--muted))]">
                 <div
-                  className="h-full bg-gradient-to-r from-[var(--primary-accent)] via-[#5a95ef] to-[#8ab4f8] transition-[width] duration-300"
+                  className="h-full bg-gradient-to-r from-[var(--primary-accent)] via-[#5a95ef] to-[#8ab4f8] transition-[width] duration-300 animate-shimmer"
                   style={{ width: `${Math.max(5, Math.floor(progress * 100))}%` }}
                 />
               </div>
@@ -528,9 +670,9 @@ export function ChatInterface({
 
         <div
           ref={scrollContainerRef}
-          className="relative flex-1 overflow-y-auto pb-40 pt-8 scrollbar-hide"
+          onScroll={handleScroll}
+          className="scroll-slim relative min-h-0 flex-1 overflow-y-auto px-1 pb-6 pt-8"
           style={{
-            scrollBehavior: "smooth",
             overscrollBehavior: "contain",
             WebkitOverflowScrolling: "touch",
             isolation: "isolate",
@@ -538,13 +680,14 @@ export function ChatInterface({
         >
           <div className="mx-auto max-w-4xl space-y-8 pb-8">
             {conversation.history.map((pair) => (
-              <article key={pair.id} className="space-y-4 rounded-[var(--radius-card)] border border-[hsl(var(--border))] bg-[color-mix(in_srgb,var(--surface)_78%,transparent)] p-4 sm:p-5">
+              <article key={pair.id} className="space-y-4 rounded-[var(--radius-card)] border border-[hsl(var(--border))] bg-[color-mix(in_srgb,var(--surface)_78%,transparent)] p-4 animate-fade-up sm:p-5">
                 <h2 className="text-lg font-semibold text-[var(--on-surface)] sm:text-xl">{pair.query}</h2>
                 <AnswerSection
                   answer={pair.answer}
                   sources={pair.sources}
                   copied={copiedMessageId === pair.id}
                   onCopy={() => handleCopy(pair.answer, pair.id)}
+                  audioKey={pair.id}
                 />
                 {pair.ticker && <StockChart ticker={pair.ticker} theme={theme} />}
                 <SourceTiles title="Sources" sources={pair.sources} />
@@ -567,6 +710,16 @@ export function ChatInterface({
 
             {(sources.length > 0 || conversation.query) && (
               <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="lg:hidden"
+                  onClick={() => setMobileThreadsOpen(true)}
+                >
+                  <MessagesSquare className="h-3.5 w-3.5" />
+                  Threads
+                </Button>
                 <Button type="button" variant="outline" size="sm" onClick={exportMarkdown}>
                   <Download className="h-3.5 w-3.5" />
                   Export MD
@@ -602,6 +755,7 @@ export function ChatInterface({
                 onCopy={() => handleCopy(conversation.currentAnswer, "current-message")}
                 onRewrite={handleRewrite}
                 showRewrite={!isLoading}
+                audioKey={`current-${messages.length}`}
               />
             )}
 
@@ -614,11 +768,13 @@ export function ChatInterface({
             {showCurrentSections && (
               <>
                 {(sources.length > 0 || (!conversation.isWaitingForResponse && !isLoading)) && (
-                  <SourceTiles
-                    title="Sources"
-                    sources={sources}
-                    isLoading={Boolean((conversation.isWaitingForResponse || isLoading) && sources.length === 0)}
-                  />
+                  <div className="lg:hidden">
+                    <SourceTiles
+                      title="Sources"
+                      sources={sources}
+                      isLoading={Boolean((conversation.isWaitingForResponse || isLoading) && sources.length === 0)}
+                    />
+                  </div>
                 )}
 
                 {imageResults.length > 0 && (
@@ -647,8 +803,24 @@ export function ChatInterface({
           </div>
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 z-30 bg-gradient-to-t from-[var(--surface)] via-[color-mix(in_srgb,var(--surface)_88%,transparent)] to-transparent pb-4 pt-4 sm:pb-6">
-          <div className="mx-auto max-w-2xl px-3 sm:px-4 lg:px-8">
+        {showJumpToLatest && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-32 z-20 flex justify-center animate-fade-in">
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => scrollToLatest()}
+              className="pointer-events-auto rounded-full shadow-[var(--shadow-md)]"
+              aria-label="Jump to latest message"
+            >
+              <ArrowDown className="h-3.5 w-3.5" />
+              Latest
+            </Button>
+          </div>
+        )}
+
+        <div className="relative z-10 bg-gradient-to-t from-[var(--surface)] via-[color-mix(in_srgb,var(--surface)_88%,transparent)] to-transparent pb-4 pt-6">
+          <div className="mx-auto max-w-2xl px-1">
             <form onSubmit={handleFormSubmit} ref={formRef}>
               <div className="surface-panel rounded-[var(--radius-chat)] p-3">
                 <div className="flex items-end gap-2">
@@ -675,7 +847,7 @@ export function ChatInterface({
                 <div className="mt-2 flex items-center gap-3 px-1 text-[11px] text-[var(--on-surface-variant)]">
                   <div className="h-1 flex-1 overflow-hidden rounded-full bg-[hsl(var(--muted))]">
                     <div
-                      className="h-full bg-gradient-to-r from-[var(--primary-accent)] to-[#8ab4f8] transition-all"
+                      className="h-full bg-gradient-to-r from-[var(--primary-accent)] to-[#8ab4f8] transition-all animate-shimmer"
                       style={{ width: `${Math.floor(progress * 100)}%` }}
                     />
                   </div>
@@ -687,11 +859,56 @@ export function ChatInterface({
         </div>
       </div>
 
-      {(newsResults.length > 0 || imageResults.length > 0 || (isLoading && messages.length > 0)) && (
-        <aside className="hidden w-80 min-w-[320px] space-y-6 overflow-y-auto p-2 pb-10 lg:block scrollbar-hide" aria-label="Related media">
-          <ImageResults results={imageResults} isLoading={isLoading && imageResults.length === 0} />
-          <NewsResults results={newsResults} isLoading={isLoading && newsResults.length === 0} />
-        </aside>
+      {showEvidence && (
+        evidenceCollapsed ? (
+          <div className="hidden w-12 shrink-0 flex-col items-center gap-2 border-l border-[hsl(var(--border))] py-3 lg:flex">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setEvidenceCollapsed(false)}
+              className="h-9 w-9"
+              title="Show evidence rail"
+              aria-label="Show evidence rail"
+            >
+              <FileText className="h-4 w-4" />
+            </Button>
+            {evidenceCount > 0 && (
+              <span className="rounded-full bg-[color-mix(in_srgb,var(--primary-accent)_14%,transparent)] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[var(--primary-accent)]">
+                {evidenceCount}
+              </span>
+            )}
+          </div>
+        ) : (
+          <aside className="scroll-slim hidden min-h-0 w-80 min-w-[320px] flex-col overflow-y-auto border-l border-[hsl(var(--border))] pb-10 pl-4 lg:flex" aria-label="Evidence">
+            <div className="flex items-center justify-between pb-2 pt-3">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[var(--on-surface-variant)]">
+                Evidence{evidenceCount > 0 ? ` · ${evidenceCount}` : ""}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setEvidenceCollapsed(true)}
+                className="h-7 w-7"
+                title="Hide evidence rail"
+                aria-label="Hide evidence rail"
+              >
+                <PanelRightClose className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="space-y-6">
+              <SourceTiles
+                title="Sources"
+                sources={sources}
+                isLoading={Boolean((conversation.isWaitingForResponse || isLoading) && sources.length === 0)}
+                compact
+              />
+              <ImageResults results={imageResults} isLoading={isLoading && imageResults.length === 0} layout="stack" />
+              <NewsResults results={newsResults} isLoading={isLoading && newsResults.length === 0} layout="stack" />
+            </div>
+          </aside>
+        )
       )}
     </div>
   )

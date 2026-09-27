@@ -24,7 +24,7 @@ export function SearchComponent({
 
   return (
     <form onSubmit={handleSubmit} className="mx-auto w-full max-w-4xl" aria-label="Research search form">
-      <div className="surface-panel rounded-[var(--radius-chat)] p-2 sm:p-3">
+      <div className="surface-panel rounded-[var(--radius-chat)] p-2 transition-shadow duration-[var(--duration-base)] ease-[var(--ease-standard)] focus-within:border-[color-mix(in_srgb,var(--primary-accent)_45%,transparent)] focus-within:shadow-[var(--shadow-lg)] sm:p-3">
         <div className="flex items-center gap-2">
           <div className="hidden h-10 w-10 items-center justify-center rounded-full bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] sm:flex">
             <Search className="h-4 w-4" />

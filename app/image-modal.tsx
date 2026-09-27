@@ -1,8 +1,8 @@
 "use client"
 
-import { X } from "lucide-react"
+import { X, ImageOff } from "lucide-react"
 import Image from "next/image"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 interface ImageModalProps {
   imageUrl: string
@@ -12,6 +12,12 @@ interface ImageModalProps {
 }
 
 export function ImageModal({ imageUrl, title, isOpen, onClose }: ImageModalProps) {
+  const [failed, setFailed] = useState(false)
+
+  useEffect(() => {
+    setFailed(false)
+  }, [imageUrl, isOpen])
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose()
@@ -48,15 +54,25 @@ export function ImageModal({ imageUrl, title, isOpen, onClose }: ImageModalProps
         </button>
 
         <div className="overflow-hidden rounded-[var(--radius-card)] border border-white/10 bg-black/10">
-          <Image
-            src={imageUrl}
-            alt={title || "Image"}
-            width={1200}
-            height={800}
-            className="h-auto max-h-[80vh] w-auto max-w-full object-contain"
-            unoptimized
-            priority
-          />
+          {failed ? (
+            <div className="flex h-64 w-[min(90vw,480px)] flex-col items-center justify-center gap-3 bg-[hsl(var(--muted))] p-6 text-center">
+              <ImageOff className="h-8 w-8 text-[var(--on-surface-variant)]" />
+              <p className="text-sm text-[var(--on-surface-variant)]">
+                This image can&apos;t be displayed. The source site may block hotlinking.
+              </p>
+            </div>
+          ) : (
+            <Image
+              src={imageUrl}
+              alt={title || "Image"}
+              width={1200}
+              height={800}
+              className="h-auto max-h-[80vh] w-auto max-w-full object-contain"
+              unoptimized
+              priority
+              onError={() => setFailed(true)}
+            />
+          )}
 
           {title && (
             <div className="bg-black/75 px-4 py-3">

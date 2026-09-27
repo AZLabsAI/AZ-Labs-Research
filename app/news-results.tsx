@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { Calendar, ExternalLink, Newspaper } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { NewsResult } from "./types"
@@ -9,9 +10,21 @@ import { isValidImageUrl } from "@/lib/image-utils"
 interface NewsResultsProps {
   results: NewsResult[]
   isLoading: boolean
+  layout?: "grid" | "stack"
 }
 
-export function NewsResults({ results, isLoading }: NewsResultsProps) {
+export function NewsResults({ results, isLoading, layout = "grid" }: NewsResultsProps) {
+  const stacked = layout === "stack"
+  const [failed, setFailed] = useState<Set<string>>(new Set())
+
+  const markFailed = (url: string) => {
+    setFailed((prev) => {
+      if (prev.has(url)) return prev
+      const next = new Set(prev)
+      next.add(url)
+      return next
+    })
+  }
   if (isLoading) {
     return (
       <section aria-label="Loading news results" className="space-y-3">
@@ -39,32 +52,34 @@ export function NewsResults({ results, isLoading }: NewsResultsProps) {
         <Newspaper className="h-4 w-4" />
         News
       </h3>
-      <div className="flex gap-3 overflow-x-auto pb-2 sm:block sm:space-y-2 scrollbar-hide">
-        {results.slice(0, 5).map((result, index) => (
-          <a
-            key={`${result.url}-${index}`}
-            href={result.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="focus-ring group block w-[280px] flex-shrink-0 rounded-[var(--radius-card)] sm:w-auto"
-          >
-            <Card className="h-full p-3 transition-all duration-[var(--duration-fast)] hover:border-[color-mix(in_srgb,var(--primary-accent)_40%,transparent)] hover:shadow-[var(--shadow-sm)]">
-              <div className="flex gap-3">
-                {result.image && isValidImageUrl(result.image) && (
-                  <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-[hsl(var(--muted))]">
-                    <Image
-                      src={result.image}
-                      alt={result.title}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement
-                        target.style.display = "none"
-                      }}
-                    />
-                  </div>
-                )}
+      <div className={stacked ? "block space-y-2" : "scroll-slim flex gap-3 overflow-x-auto pb-2 sm:block sm:space-y-2"}>
+        {results.slice(0, 5).map((result, index) => {
+          const thumb = result.image && isValidImageUrl(result.image) && !failed.has(result.image)
+            ? result.image
+            : null
+          return (
+            <a
+              key={`${result.url}-${index}`}
+              href={result.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`focus-ring group block rounded-[var(--radius-card)] ${stacked ? "w-auto" : "w-[280px] flex-shrink-0 sm:w-auto"}`}
+            >
+              <Card className="h-full p-3 transition-all duration-[var(--duration-fast)] hover:border-[color-mix(in_srgb,var(--primary-accent)_40%,transparent)] hover:shadow-[var(--shadow-sm)]">
+                <div className="flex gap-3">
+                  {thumb && (
+                    <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-[var(--radius-sm)] bg-[hsl(var(--muted))]">
+                      <Image
+                        src={thumb}
+                        alt=""
+                        fill
+                        sizes="64px"
+                        className="object-cover"
+                        unoptimized
+                        onError={() => markFailed(thumb)}
+                      />
+                    </div>
+                  )}
 
                 <div className="min-w-0 flex-1">
                   <h4 className="mb-1 line-clamp-2 text-sm font-medium text-[var(--on-surface)] transition-colors group-hover:text-[var(--primary-accent)]">
@@ -94,7 +109,8 @@ export function NewsResults({ results, isLoading }: NewsResultsProps) {
               </div>
             </Card>
           </a>
-        ))}
+          )
+        })}
       </div>
     </section>
   )

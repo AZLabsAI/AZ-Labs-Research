@@ -21,7 +21,8 @@ export function StarterQuestions({ onSelect, isLoading }: StarterQuestionsProps)
     temp: number | null
     condition: string | null
     loading: boolean
-  }>({ temp: null, condition: null, loading: false })
+    unavailable: boolean
+  }>({ temp: null, condition: null, loading: false, unavailable: false })
 
   const STORAGE_KEY = "starter-city-label"
 
@@ -85,11 +86,45 @@ export function StarterQuestions({ onSelect, isLoading }: StarterQuestionsProps)
 
   const clearCity = () => {
     setCityLabel(null)
-    setWeather({ temp: null, condition: null, loading: false })
+    setWeather({ temp: null, condition: null, loading: false, unavailable: false })
     try {
       localStorage.removeItem(STORAGE_KEY)
     } catch {
       // no-op
+    }
+  }
+
+  const weatherCodeLabel = (code: number): string => {
+    if (code === 0) return "Clear sky"
+    if (code <= 3) return code === 1 ? "Mostly clear" : code === 2 ? "Partly cloudy" : "Overcast"
+    if (code === 45 || code === 48) return "Foggy"
+    if (code <= 57) return "Drizzle"
+    if (code <= 67) return "Rain"
+    if (code <= 77) return "Snow"
+    if (code <= 82) return "Showers"
+    if (code === 85 || code === 86) return "Snow showers"
+    if (code >= 95) return "Thunderstorm"
+    return "Unknown"
+  }
+
+  const fetchWeatherByCoords = async (latitude: number, longitude: number) => {
+    setWeather((prev) => ({ ...prev, loading: true, unavailable: false }))
+    try {
+      const response = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&timezone=auto`
+      )
+      if (!response.ok) throw new Error("Weather fetch failed")
+      const data = await response.json()
+      const current = data.current
+      if (typeof current?.temperature_2m !== "number") throw new Error("No weather data")
+      setWeather({
+        temp: Math.round(current.temperature_2m),
+        condition: weatherCodeLabel(Number(current.weather_code ?? -1)),
+        loading: false,
+        unavailable: false,
+      })
+    } catch {
+      setWeather({ temp: null, condition: null, loading: false, unavailable: true })
     }
   }
 
@@ -119,6 +154,7 @@ export function StarterQuestions({ onSelect, isLoading }: StarterQuestionsProps)
       const region = data.principalSubdivision || data.region || data.countryName
       const label = [city, region].filter(Boolean).join(", ")
       if (label) saveCity(label)
+      void fetchWeatherByCoords(latitude, longitude)
     } catch {
       // no-op
     } finally {
@@ -127,36 +163,28 @@ export function StarterQuestions({ onSelect, isLoading }: StarterQuestionsProps)
   }
 
   const fetchWeather = async (location: string) => {
-    setWeather((prev) => ({ ...prev, loading: true }))
+    setWeather((prev) => ({ ...prev, loading: true, unavailable: false }))
     try {
-      const response = await fetch(
-        `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&appid=demo&units=metric`
+      // Open-Meteo needs coordinates: geocode the saved label first (both free, keyless).
+      const geoResponse = await fetch(
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1`
       )
-
-      if (response.ok) {
-        const data = await response.json()
-        setWeather({
-          temp: Math.round(data.main?.temp || 0),
-          condition: data.weather?.[0]?.main || "Unknown",
-          loading: false,
-        })
-        return
+      if (!geoResponse.ok) throw new Error("Geocode failed")
+      const geo = await geoResponse.json()
+      const first = geo.results?.[0]
+      if (typeof first?.latitude !== "number" || typeof first?.longitude !== "number") {
+        throw new Error("Location not found")
       }
-
-      throw new Error("Weather fetch failed")
+      await fetchWeatherByCoords(first.latitude, first.longitude)
     } catch {
-      setWeather({
-        temp: 22,
-        condition: "Partly Cloudy",
-        loading: false,
-      })
+      setWeather({ temp: null, condition: null, loading: false, unavailable: true })
     }
   }
 
   return (
     <section className="mx-auto mt-4 max-w-4xl" aria-label="Starter questions">
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="surface-panel rounded-[var(--radius-md)] p-3">
+        <div className="surface-panel rounded-[var(--radius-md)] p-3 animate-fade-up">
           <div className="mb-1 flex items-center gap-2 text-xs font-medium text-[var(--on-surface-variant)]">
             <Clock className="h-3.5 w-3.5 text-[var(--primary-accent)]" />
             Local Time
@@ -169,7 +197,7 @@ export function StarterQuestions({ onSelect, isLoading }: StarterQuestionsProps)
           </div>
         </div>
 
-        <div className="surface-panel rounded-[var(--radius-md)] p-3">
+        <div className="surface-panel rounded-[var(--radius-md)] p-3 animate-fade-up" style={{ animationDelay: "60ms" }}>
           <div className="mb-1 flex items-center gap-2 text-xs font-medium text-[var(--on-surface-variant)]">
             <Cloud className="h-3.5 w-3.5 text-[var(--primary-accent)]" />
             Weather
@@ -181,12 +209,14 @@ export function StarterQuestions({ onSelect, isLoading }: StarterQuestionsProps)
               <div className="text-base font-semibold text-[var(--on-surface)]">{weather.temp}°C</div>
               <div className="text-xs text-[var(--on-surface-variant)]">{weather.condition}</div>
             </>
+          ) : weather.unavailable ? (
+            <div className="text-xs text-[var(--on-surface-variant)]">Weather unavailable</div>
           ) : (
             <div className="text-xs text-[var(--on-surface-variant)]">Set location</div>
           )}
         </div>
 
-        <div className="surface-panel rounded-[var(--radius-md)] p-3">
+        <div className="surface-panel rounded-[var(--radius-md)] p-3 animate-fade-up" style={{ animationDelay: "120ms" }}>
           <div className="mb-1 flex items-center gap-2 text-xs font-medium text-[var(--on-surface-variant)]">
             <Thermometer className="h-3.5 w-3.5 text-[var(--primary-accent)]" />
             Date
@@ -212,23 +242,27 @@ export function StarterQuestions({ onSelect, isLoading }: StarterQuestionsProps)
               <MapPin className="h-3.5 w-3.5 text-[var(--primary-accent)]" />
               {cityLabel}
             </span>
-            <button
+            <Button
               type="button"
+              variant="link"
+              size="sm"
+              className="h-auto px-1 py-0.5 text-xs"
               onClick={() => {
                 setManualValue(cityLabel)
                 setManualOpen(true)
               }}
-              className="focus-ring rounded px-1 py-0.5 text-[var(--primary-accent)] hover:text-[var(--primary-accent-strong)]"
             >
               Change
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="link"
+              size="sm"
+              className="h-auto px-1 py-0.5 text-xs text-[var(--on-surface-variant)]"
               onClick={clearCity}
-              className="focus-ring rounded px-1 py-0.5 hover:text-[var(--on-surface)]"
             >
               Clear
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="flex items-center gap-2">
@@ -269,12 +303,13 @@ export function StarterQuestions({ onSelect, isLoading }: StarterQuestionsProps)
       )}
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {suggestions.map((question) => (
+        {suggestions.map((question, index) => (
           <Button
             key={question}
             type="button"
             variant="outline"
-            className="h-auto justify-start rounded-[var(--radius-md)] px-4 py-3 text-left text-sm"
+            className="h-auto justify-start rounded-[var(--radius-md)] px-4 py-3 text-left text-sm animate-fade-up"
+            style={{ animationDelay: `${Math.min(index, 7) * 45}ms` }}
             disabled={isLoading}
             onClick={() => onSelect(question)}
           >

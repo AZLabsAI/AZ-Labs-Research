@@ -31,19 +31,24 @@ export function SiteHeader() {
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <button
           onClick={handleLogoClick}
-          className="focus-ring inline-flex items-center gap-3 rounded-full px-2 py-1 text-left"
+          className="focus-ring group inline-flex items-center gap-3 rounded-2xl px-2 py-1 text-left"
           aria-label="Go to home"
         >
           <Image
-            src="/az-labs-logo.png"
+            src="/brand/az-mark.png"
             alt="AZ Labs"
-            width={320}
-            height={86}
+            width={256}
+            height={256}
             priority
-            className="h-14 w-auto select-none"
+            className="h-10 w-10 select-none brightness-0 transition-transform duration-[var(--duration-base)] ease-[var(--ease-standard)] group-hover:scale-105 group-active:scale-95 dark:invert"
           />
-          <span className="hidden text-xs text-[var(--on-surface-variant)] md:block">
-            AI multi-search, multi-source research
+          <span className="flex flex-col leading-none">
+            <span className="text-[1.05rem] font-semibold tracking-tight text-[var(--on-surface)]">
+              AZ Labs
+            </span>
+            <span className="text-xs font-medium text-[var(--primary-accent)]">
+              Research
+            </span>
           </span>
         </button>
 
@@ -94,7 +99,7 @@ export function SiteHeader() {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button asChild variant="outline" size="sm" className="h-9">
+              <Button asChild size="sm" className="h-9 animate-fade-in">
                 <Link href="/auth/login">
                   <LogIn className="h-4 w-4 sm:mr-2" />
                   <span className="hidden sm:inline">Sign In</span>

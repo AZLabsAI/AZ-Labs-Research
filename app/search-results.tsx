@@ -96,7 +96,7 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
 
             <div className="mb-2">
               <CharacterCounter
-                targetCount={result.markdown?.length || result.content?.length || 0}
+                targetCount={result.contentLength ?? result.markdown?.length ?? result.content?.length ?? 0}
                 duration={1400}
               />
             </div>

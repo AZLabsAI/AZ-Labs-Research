@@ -7,29 +7,44 @@ import { AlertCircle } from 'lucide-react'
 
 export default function AuthCodeErrorPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-8 bg-white/10 backdrop-blur-lg border border-white/20">
+    <div className="relative flex min-h-[calc(100vh-6rem)] items-center justify-center overflow-hidden px-4 py-12">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-32 -top-24 h-[420px] w-[420px] rounded-full bg-[radial-gradient(circle,rgba(26,115,232,0.16)_0%,transparent_70%)] animate-float-slow" />
+        <div className="absolute -right-28 top-20 h-[360px] w-[360px] rounded-full bg-[radial-gradient(circle,rgba(138,180,248,0.2)_0%,transparent_70%)] animate-float-slower" />
+      </div>
+
+      <Card className="surface-panel relative w-full max-w-md rounded-[var(--radius-card)] p-8 animate-fade-up">
         <div className="text-center">
-          <AlertCircle className="mx-auto h-12 w-12 text-red-400 mb-4" />
-          <h1 className="text-2xl font-bold text-white mb-2">Authentication Error</h1>
-          <p className="text-slate-300 mb-6">
-            There was an error during the authentication process. This could be due to:
+          <div className="mx-auto mb-4 w-fit rounded-full bg-[hsl(var(--destructive))/0.12] p-3 text-[hsl(var(--destructive))]">
+            <AlertCircle className="h-6 w-6" />
+          </div>
+          <h1 className="mb-2 text-2xl font-semibold tracking-tight text-[var(--on-surface)]">
+            Authentication Error
+          </h1>
+          <p className="mb-6 text-sm text-[var(--on-surface-variant)]">
+            The sign-in didn&apos;t complete. This is usually caused by:
           </p>
-          
-          <ul className="text-slate-300 text-sm text-left mb-6 space-y-2">
-            <li>• Invalid or expired authentication code</li>
-            <li>• Network connectivity issues</li>
-            <li>• OAuth provider configuration problems</li>
+
+          <ul className="mb-6 space-y-2 text-left text-sm text-[var(--on-surface-variant)]">
+            <li className="flex gap-2">
+              <span aria-hidden="true">•</span> An invalid or expired authentication code
+            </li>
+            <li className="flex gap-2">
+              <span aria-hidden="true">•</span> A lost network connection mid-sign-in
+            </li>
+            <li className="flex gap-2">
+              <span aria-hidden="true">•</span> Your AZ Labs account not having Research access
+            </li>
           </ul>
 
-          <div className="space-y-3">
-            <Button asChild className="w-full bg-purple-600 hover:bg-purple-700">
+          <div className="space-y-2">
+            <Button asChild className="w-full">
               <Link href="/auth/login">
                 Try Again
               </Link>
             </Button>
-            
-            <Button asChild variant="outline" className="w-full border-white/20 text-white hover:bg-white/10">
+
+            <Button asChild variant="outline" className="w-full">
               <Link href="/">
                 Back to Home
               </Link>
