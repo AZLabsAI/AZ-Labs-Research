@@ -17,7 +17,7 @@ if (process.argv.includes('--check-schema') && blockers.length === 0) {
       body: '{}', cache: 'no-store', redirect: 'error', signal: AbortSignal.timeout(10000),
     })
     const data = await response.json()
-    schemaVerified = response.ok && data.version === 'research-session-binding-v1' && data.profilesGuarded === true && data.writesRestricted === true
+    schemaVerified = response.ok && data.version === 'research-profile-api-v2' && data.profilesGuarded === true && data.writesRestricted === true
     if (!schemaVerified) blockers.push('The read-only schema/RLS check failed')
   } catch { blockers.push('The read-only schema/RLS check is unavailable') }
 }

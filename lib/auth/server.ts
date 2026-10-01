@@ -9,6 +9,7 @@ import { verifyCentralToken, decodeLocalSessionId, RESEARCH_CLIENT_ID, type Acce
 import { AccessDeniedError, checkResearchAccess, researchRequestId, type ResearchAccess } from './platform-access'
 import { bindingIsActive, type SessionBinding } from './session-binding'
 import { resolveLogoutSubject } from './logout-subject'
+import type { ResearchProfile, ResearchProfilePatch } from '../account/profile'
 
 export function authConfiguration() {
   const platformOrigin = process.env.AZLABS_PLATFORM_ORIGIN || 'https://azlabs.ai'
@@ -68,14 +69,32 @@ async function verifyAccessToken(token: string): Promise<AccessTokenClaims> {
 
 async function assertLocalReadiness() {
   const { data, error } = await admin().rpc('research_auth_readiness')
-  if (error || data?.version !== 'research-session-binding-v1' || data.profilesGuarded !== true || data.writesRestricted !== true) {
+  if (error || data?.version !== 'research-profile-api-v2' || data.profilesGuarded !== true || data.writesRestricted !== true) {
     throw new AccessDeniedError(503, 'local_policy_not_ready')
   }
   const probes = await Promise.all([
     admin().from('azlabs_research_sessions').select('local_session_id').limit(0),
     admin().from('azlabs_research_logout_events').select('jti').limit(0),
+    admin().from('profiles').select('id').limit(0),
   ])
   if (probes.some((probe) => probe.error)) throw new AccessDeniedError(503, 'local_binding_api_not_ready')
+}
+
+export function researchProfileStore() {
+  return {
+    async read(localSubject: string): Promise<ResearchProfile | null> {
+      const { data, error } = await admin().from('profiles')
+        .select('id,email,full_name,avatar_url,created_at,updated_at').eq('id', localSubject).maybeSingle()
+      if (error) throw new AccessDeniedError(503, 'profile_store_unavailable')
+      return data as ResearchProfile | null
+    },
+    async update(localSubject: string, patch: ResearchProfilePatch): Promise<ResearchProfile | null> {
+      const { data, error } = await admin().from('profiles').update({ ...patch, updated_at: new Date().toISOString() })
+        .eq('id', localSubject).select('id,email,full_name,avatar_url,created_at,updated_at').maybeSingle()
+      if (error) throw new AccessDeniedError(503, 'profile_store_unavailable')
+      return data as ResearchProfile | null
+    },
+  }
 }
 
 export async function publicAuthReadiness(): Promise<boolean> {
