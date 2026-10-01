@@ -7,6 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test lib/auth/*.test.ts lib/*.test.ts",
+    "test:sql": "node --experimental-strip-types --test tests/sql/*.test.mjs",
     "snapshots": "bash scripts/capture-visual-snapshots.sh",
     "verify": "bash scripts/verify.sh",
     "gate": "bash scripts/full-gate.sh"

@@ -4,13 +4,16 @@ import { streamText, generateText, createUIMessageStream, createUIMessageStreamR
 import type { ModelMessage } from 'ai'
 import { detectCompanyTicker } from '@/lib/company-ticker-map'
 import { selectRelevantContent } from '@/lib/content-selection'
+import { authFailure, requireResearchSpend } from '@/lib/auth/server'
+import { AccessDeniedError } from '@/lib/auth/platform-access'
+import { approvedResearchOperation } from '@/lib/auth/provider-operation'
 
 // NOTE: Netlify's Next.js runtime deploys this route into the Node server handler
 // (there is no per-route edge function), so the stream must never stall: the proxy
 // silently kills connections that go ~10s without flushed bytes, which the UI then
 // shows as an infinite loading loop. Heartbeats below keep the stream alive while
 // slow calls (Firecrawl, Muse reasoning) are in flight.
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 
 const DEFAULT_META_MODEL = 'muse-spark-1.3-contributor'
 // Muse Spark reasons before it answers; at default effort the first token took ~19s on a
@@ -90,19 +93,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Query is required' }, { status: 400 })
     }
 
-    // Use API key from request body if provided, otherwise fall back to environment variable
-    const firecrawlApiKey = body.firecrawlApiKey || process.env.FIRECRAWL_API_KEY
+    // Provider credentials stay server-owned.
+    const firecrawlApiKey = process.env.FIRECRAWL_API_KEY
     const metaApiKey = process.env.META_API_KEY
     const metaModel = process.env.META_MODEL || DEFAULT_META_MODEL
     
     if (!firecrawlApiKey) {
-      return NextResponse.json({ error: 'Firecrawl API key not configured' }, { status: 500 })
+      return NextResponse.json({ error: 'Research is temporarily unavailable. Please try again later.' }, { status: 503 })
     }
     
     if (!metaApiKey) {
-      return NextResponse.json({ error: 'Meta Model API key not configured' }, { status: 500 })
+      return NextResponse.json({ error: 'Research is temporarily unavailable. Please try again later.' }, { status: 503 })
     }
 
+    return await approvedResearchOperation(() => requireResearchSpend(request), async () => {
     // Meta Model API (Muse Spark) speaks the OpenAI chat-completions format.
     const meta = createOpenAICompatible({
       name: 'meta',
@@ -558,12 +562,12 @@ export async function POST(request: Request) {
           // Provide user-friendly error messages
           const errorResponses: Record<number, { error: string; suggestion?: string }> = {
             401: {
-              error: 'Invalid API key',
-              suggestion: 'Please check your Firecrawl API key is correct.'
+              error: 'Research is temporarily unavailable',
+              suggestion: 'Please try again later.'
             },
             402: {
-              error: 'Insufficient credits',
-              suggestion: 'You\'ve run out of Firecrawl credits. Please upgrade your plan.'
+              error: 'Research is temporarily unavailable',
+              suggestion: 'Please try again later.'
             },
             429: {
               error: 'Rate limit exceeded',
@@ -594,14 +598,14 @@ export async function POST(request: Request) {
     })
     
     return createUIMessageStreamResponse({ stream })
+    })
     
   } catch (error) {
+    if (error instanceof AccessDeniedError) return authFailure(error)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-    const errorStack = error instanceof Error ? error.stack : ''
     return NextResponse.json(
-      { error: 'Search failed', message: errorMessage, details: errorStack },
+      { error: 'Search failed', message: errorMessage },
       { status: 500 }
     )
   }
 }
-
