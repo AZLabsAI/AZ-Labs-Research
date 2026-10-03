@@ -1,11 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/utils/supabase/client'
 
 // Provide fallback values during build time to prevent errors
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
-
-// Create client with error handling for missing environment variables
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Use the same cookie-backed browser client as the server OAuth callback.
+export const supabase = createClient()
 
 export type Json =
   | string

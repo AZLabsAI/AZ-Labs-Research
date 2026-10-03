@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
+import { authFailure, requireResearchSpend } from '@/lib/auth/server'
+import { AccessDeniedError } from '@/lib/auth/platform-access'
+import { approvedResearchOperation } from '@/lib/auth/provider-operation'
 
-export const runtime = 'edge'
+export const runtime = 'nodejs'
 
 // Narration for generated answers. Chain: ElevenLabs keys in quota order, then
 // Fish Audio (free OpenRouter route) as the final fallback. Keys stay server-side.
@@ -115,6 +118,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Nothing readable to narrate' }, { status: 400 })
     }
 
+    return await approvedResearchOperation(() => requireResearchSpend(request), async () => {
     const failures: string[] = []
 
     // 1. ElevenLabs keys in quota order.
@@ -157,7 +161,9 @@ export async function POST(request: Request) {
       { error: 'All narration providers failed', detail: failures.join(', ') },
       { status: 502 }
     )
+    })
   } catch (error) {
+    if (error instanceof AccessDeniedError) return authFailure(error)
     return NextResponse.json(
       { error: 'Narration failed', message: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

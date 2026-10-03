@@ -6,8 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { User, Mail, Calendar, Save, Loader2 } from 'lucide-react'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useState, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 
 interface ProfileData {
@@ -19,10 +18,33 @@ interface ProfileData {
   updated_at: string
 }
 
+class ProfileRequestError extends Error {
+  constructor(public status: number, message: string) { super(message) }
+}
+
+async function readProfile(response: Response, ownerId: string): Promise<ProfileData> {
+  const body = await response.json().catch(() => null) as { profile?: ProfileData; error?: string } | null
+  if (!response.ok) {
+    const message = response.status === 401 ? 'Your session has ended. Sign in again to access your profile.'
+      : response.status === 403 ? 'Your AZ Labs account does not currently have Research access.'
+      : response.status === 404 ? 'Your Research profile is not available yet. Contact AZ Labs support.'
+      : response.status === 429 ? 'Your Research limit has been reached. Try again after it resets.'
+      : response.status === 400 ? body?.error || 'Check your display name and avatar URL.'
+      : 'We cannot check Research access right now. Try again shortly.'
+    throw new ProfileRequestError(response.status, message)
+  }
+  if (!body?.profile || body.profile.id !== ownerId) throw new ProfileRequestError(503, 'Your Research profile could not be confirmed. Try again shortly.')
+  return body.profile
+}
+
 export default function ProfilePage() {
   const { user, loading } = useAuth()
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [profileLoading, setProfileLoading] = useState(true)
+  const [profileError, setProfileError] = useState<ProfileRequestError | null>(null)
+  const [retry, setRetry] = useState(0)
+  const requestVersion = useRef(0)
+  const ownerId = user?.id
 
   const [formData, setFormData] = useState({
     full_name: '',
@@ -31,100 +53,86 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    if (user) {
-      void fetchProfile()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
-
-  const fetchProfile = async () => {
-    if (!user) return
-
-    try {
-      setProfileLoading(true)
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // Profile doesn't exist, create one
-          const newProfile = {
-            id: user.id,
-            email: user.email!,
-            full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
-            avatar_url: user.user_metadata?.avatar_url || null,
-          }
-
-          const { data: insertedProfile, error: insertError } = await supabase
-            .from('profiles')
-            .insert(newProfile)
-            .select()
-            .single()
-
-          if (insertError) throw insertError
-          setProfile(insertedProfile)
-          setFormData({
-            full_name: insertedProfile.full_name || '',
-            avatar_url: insertedProfile.avatar_url || ''
-          })
-        } else {
-          throw error
-        }
-      } else {
-        setProfile(data)
-        setFormData({
-          full_name: data.full_name || '',
-          avatar_url: data.avatar_url || ''
-        })
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error)
-      toast.error('Failed to load profile data')
-    } finally {
+    const version = ++requestVersion.current
+    const controller = new AbortController()
+    setProfile(null)
+    setProfileError(null)
+    setFormData({ full_name: '', avatar_url: '' })
+    setSaving(false)
+    if (loading || !ownerId) {
       setProfileLoading(false)
+      return () => controller.abort()
     }
-  }
+    setProfileLoading(true)
+    void (async () => {
+      try {
+        const response = await fetch('/api/account/profile', { cache: 'no-store', credentials: 'same-origin', signal: controller.signal })
+        const data = await readProfile(response, ownerId)
+        if (controller.signal.aborted || requestVersion.current !== version) return
+        setProfile(data)
+        setFormData({ full_name: data.full_name || '', avatar_url: data.avatar_url || '' })
+      } catch (error) {
+        if (controller.signal.aborted || requestVersion.current !== version) return
+        setProfileError(error instanceof ProfileRequestError ? error : new ProfileRequestError(503, 'Your Research profile could not be loaded. Try again shortly.'))
+      } finally {
+        if (!controller.signal.aborted && requestVersion.current === version) setProfileLoading(false)
+      }
+    })()
+    return () => controller.abort()
+  }, [ownerId, loading, retry])
 
   const handleSave = async () => {
-    if (!user || !profile) return
+    if (!ownerId || !profile || profile.id !== ownerId) return
+    const version = requestVersion.current
 
     try {
       setSaving(true)
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: formData.full_name || null,
-          avatar_url: formData.avatar_url || null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id)
-
-      if (error) throw error
-
-      // Update local state
-      setProfile(prev => prev ? {
-        ...prev,
-        full_name: formData.full_name || null,
-        avatar_url: formData.avatar_url || null,
-        updated_at: new Date().toISOString()
-      } : null)
-
-      toast.success('Profile updated successfully!')
+      const response = await fetch('/api/account/profile', {
+        method: 'PATCH', cache: 'no-store', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_name: formData.full_name.trim() || null, avatar_url: formData.avatar_url.trim() || null }),
+      })
+      const data = await readProfile(response, ownerId)
+      if (requestVersion.current !== version) return
+      setProfile(data)
+      setFormData({ full_name: data.full_name || '', avatar_url: data.avatar_url || '' })
+      toast.success('Profile updated.')
     } catch (error) {
-      console.error('Error updating profile:', error)
-      toast.error('Failed to update profile')
+      if (requestVersion.current !== version) return
+      const denied = error instanceof ProfileRequestError ? error : new ProfileRequestError(503, 'Your profile update could not be confirmed. Try again shortly.')
+      if (denied.status !== 400) {
+        setProfile(null)
+        setFormData({ full_name: '', avatar_url: '' })
+        setProfileError(denied)
+      }
+      toast.error(denied.message)
     } finally {
-      setSaving(false)
+      if (requestVersion.current === version) setSaving(false)
     }
   }
 
   if (loading || profileLoading) {
     return (
       <div className="flex min-h-[calc(100vh-6rem)] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[var(--primary-accent)]" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--primary-accent)]" aria-hidden="true" />
+        <span role="status" className="sr-only">Loading your profile.</span>
+      </div>
+    )
+  }
+
+  if (profileError || !profile || profile.id !== ownerId) {
+    return (
+      <div className="flex min-h-[calc(100vh-6rem)] items-center justify-center px-4">
+        <Card className="surface-panel max-w-md rounded-[var(--radius-card)] p-8 text-center">
+          <h1 className="mb-2 text-2xl font-semibold tracking-tight text-[var(--on-surface)]">Profile unavailable</h1>
+          <p role="alert" className="mb-6 text-sm text-[var(--on-surface-variant)]">{profileError?.message || 'Your Research profile could not be confirmed.'}</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            {profileError?.status === 401 ? <Button asChild><Link href="/auth/login?next=/profile">Sign in</Link></Button>
+              : profileError?.status === 403 ? <Button asChild><a href="https://azlabs.ai/account">Review AZ Labs access</a></Button>
+              : <Button onClick={() => setRetry((value) => value + 1)}>Try again</Button>}
+            <Button asChild variant="outline"><a href="https://azlabs.ai/contact">Contact support</a></Button>
+          </div>
+        </Card>
       </div>
     )
   }
@@ -176,7 +184,7 @@ export default function ProfilePage() {
                 <Input
                   id="email"
                   type="email"
-                  value={user.email || ''}
+                  value={profile.email}
                   disabled
                 />
                 <p className="mt-1 text-xs text-[var(--on-surface-variant)]">
@@ -193,6 +201,7 @@ export default function ProfilePage() {
                   type="text"
                   placeholder="Enter your full name"
                   value={formData.full_name}
+                  maxLength={200}
                   onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                 />
               </div>
@@ -206,6 +215,7 @@ export default function ProfilePage() {
                   type="url"
                   placeholder="https://example.com/avatar.jpg"
                   value={formData.avatar_url}
+                  maxLength={2048}
                   onChange={(e) => setFormData(prev => ({ ...prev, avatar_url: e.target.value }))}
                 />
                 <p className="mt-1 text-xs text-[var(--on-surface-variant)]">

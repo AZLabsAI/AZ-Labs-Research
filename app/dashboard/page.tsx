@@ -10,6 +10,7 @@ import Link from 'next/link'
 import { clearSearchHistory, getSearchHistory, getSearchStats } from '@/lib/search-history'
 import type { SearchHistoryEntry, SearchStats } from '@/lib/search-history'
 import { toast } from 'sonner'
+import { ImportAnonymousResearch } from '@/components/import-anonymous-research'
 
 function formatRelative(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime()
@@ -24,15 +25,20 @@ function formatRelative(iso: string): string {
 }
 
 export default function DashboardPage() {
-  const { user, loading } = useAuth()
+  const { user, subject, loading } = useAuth()
   const router = useRouter()
   const [history, setHistory] = useState<SearchHistoryEntry[]>([])
   const [stats, setStats] = useState<SearchStats>({ total: 0, thisMonth: 0, lastAt: null })
 
   useEffect(() => {
-    setHistory(getSearchHistory())
-    setStats(getSearchStats())
-  }, [])
+    const reload = () => {
+      setHistory(getSearchHistory(subject))
+      setStats(getSearchStats(subject))
+    }
+    reload()
+    window.addEventListener('research-history-imported', reload)
+    return () => window.removeEventListener('research-history-imported', reload)
+  }, [subject])
 
   if (loading) {
     return (
@@ -59,9 +65,9 @@ export default function DashboardPage() {
   }
 
   const handleClearHistory = () => {
-    clearSearchHistory()
+    clearSearchHistory(subject)
     setHistory([])
-    setStats(getSearchStats())
+    setStats(getSearchStats(subject))
     toast.success('Search history cleared')
   }
 
@@ -177,7 +183,7 @@ export default function DashboardPage() {
                     type="button"
                     onClick={() => router.push(`/?q=${encodeURIComponent(entry.query)}`)}
                     className="focus-ring group flex w-full items-center gap-3 rounded-[var(--radius-md)] border border-[hsl(var(--border))] bg-[var(--surface-container-low)] px-3 py-2 text-left transition-colors duration-[var(--duration-fast)] hover:border-[color-mix(in_srgb,var(--primary-accent)_35%,transparent)]"
-                    title={`Re-run: ${entry.query}`}
+                    title={`Open question: ${entry.query}`}
                   >
                     <RotateCcw className="h-3.5 w-3.5 shrink-0 text-[var(--on-surface-variant)] transition-transform duration-[var(--duration-base)] ease-[var(--ease-standard)] group-hover:-rotate-180" />
                     <span className="min-w-0 flex-1 truncate text-sm text-[var(--on-surface)]">
@@ -195,6 +201,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      <ImportAnonymousResearch />
       <div className="mt-4">
         <Card className="surface-panel rounded-[var(--radius-card)] p-6 animate-fade-up" style={{ animationDelay: '240ms' }}>
           <h2 className="mb-4 text-xl font-semibold tracking-tight text-[var(--on-surface)]">

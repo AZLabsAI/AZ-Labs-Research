@@ -22,6 +22,7 @@ interface AudioNarrationProps {
 export function AudioNarration({ text, audioKey }: AudioNarrationProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const objectUrlRef = useRef<string | null>(null)
+  const narrationAbort = useRef<AbortController | null>(null)
   const [phase, setPhase] = useState<"idle" | "loading" | "ready" | "error">("idle")
   const [playing, setPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -41,6 +42,8 @@ export function AudioNarration({ text, audioKey }: AudioNarrationProps) {
   }
 
   useEffect(() => {
+    narrationAbort.current?.abort()
+    narrationAbort.current = null
     setPhase("idle")
     setPlaying(false)
     setCurrentTime(0)
@@ -52,25 +55,33 @@ export function AudioNarration({ text, audioKey }: AudioNarrationProps) {
   }, [audioKey])
 
   useEffect(() => {
-    return () => revokeAudio()
+    return () => {
+      narrationAbort.current?.abort()
+      narrationAbort.current = null
+      revokeAudio()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const generate = async () => {
     if (!text.trim() || phase === "loading") return
     setPhase("loading")
+    const controller = new AbortController()
+    narrationAbort.current = controller
+    const timeout = setTimeout(() => controller.abort(), 90000)
     try {
       const response = await fetch("/api/az-labs-research/narrate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-research-request-id": `narration:${crypto.randomUUID()}` },
         body: JSON.stringify({ text: text.slice(0, 6000) }),
-        signal: AbortSignal.timeout(90000),
+        signal: controller.signal,
       })
       if (!response.ok) {
         const data = await response.json().catch(() => null)
         throw new Error(data?.error || `Narration failed (${response.status})`)
       }
       const blob = await response.blob()
+      if (controller.signal.aborted || narrationAbort.current !== controller) return
       revokeAudio()
       const url = URL.createObjectURL(blob)
       objectUrlRef.current = url
@@ -94,8 +105,12 @@ export function AudioNarration({ text, audioKey }: AudioNarrationProps) {
         setPlaying(false)
       }
     } catch (error) {
+      if (narrationAbort.current !== controller) return
       setPhase("error")
       toast.error(error instanceof Error ? error.message : "Narration failed")
+    } finally {
+      clearTimeout(timeout)
+      if (narrationAbort.current === controller) narrationAbort.current = null
     }
   }
 

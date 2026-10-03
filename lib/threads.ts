@@ -2,6 +2,7 @@
 
 import type { UIMessage } from "ai"
 import type { ImageResult, NewsResult, SearchResult } from "../app/types"
+import { accountStorageKey, readStoredArray, writeStoredArray } from './account-storage.ts'
 
 export interface ThreadMessageData {
   sources: SearchResult[]
@@ -37,40 +38,28 @@ const THREADS_KEY = "azlabs-research-threads-v1"
 const MAX_THREADS = 20
 const MAX_MESSAGES_PER_THREAD = 40
 
-function readThreads(): ThreadData[] {
-  if (typeof window === "undefined") return []
-  try {
-    const raw = localStorage.getItem(THREADS_KEY)
-    if (!raw) return []
-    const parsed: unknown = JSON.parse(raw)
-    if (!Array.isArray(parsed)) return []
-    return parsed.filter(
+function validThreads(entries: unknown[]): ThreadData[] {
+  return entries.filter(
       (entry): entry is ThreadData =>
         typeof entry === "object" &&
         entry !== null &&
         typeof (entry as ThreadData).id === "string" &&
         Array.isArray((entry as ThreadData).messages)
     )
-  } catch {
-    return []
-  }
 }
 
-function writeThreads(threads: ThreadData[]): void {
-  try {
-    localStorage.setItem(THREADS_KEY, JSON.stringify(threads.slice(0, MAX_THREADS)))
-  } catch {
-    // Quota exceeded: drop oldest threads and retry once.
-    try {
-      localStorage.setItem(THREADS_KEY, JSON.stringify(threads.slice(0, 10)))
-    } catch {
-      // Storage unavailable; threads are best-effort.
-    }
-  }
+function readThreads(subject: string | null): ThreadData[] {
+  return validThreads(readStoredArray(accountStorageKey(THREADS_KEY, subject)))
 }
 
-export function listThreads(): ThreadSummary[] {
-  return readThreads().map((thread) => ({
+function writeThreads(subject: string | null, threads: ThreadData[]): boolean {
+  const key = accountStorageKey(THREADS_KEY, subject)
+  if (writeStoredArray(key, threads.slice(0, MAX_THREADS))) return true
+  return writeStoredArray(key, threads.slice(0, 10))
+}
+
+export function listThreads(subject: string | null): ThreadSummary[] {
+  return readThreads(subject).map((thread) => ({
     id: thread.id,
     title: thread.title,
     createdAt: thread.createdAt,
@@ -79,8 +68,8 @@ export function listThreads(): ThreadSummary[] {
   }))
 }
 
-export function getThread(id: string): ThreadData | null {
-  return readThreads().find((thread) => thread.id === id) ?? null
+export function getThread(subject: string | null, id: string): ThreadData | null {
+  return readThreads(subject).find((thread) => thread.id === id) ?? null
 }
 
 function messageText(message: UIMessage): string {
@@ -104,18 +93,30 @@ export function newThreadId(): string {
   return `thread-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-export function saveThread(thread: ThreadData): void {
-  if (thread.messages.length === 0) return
-  const threads = readThreads().filter((entry) => entry.id !== thread.id)
+export function saveThread(subject: string | null, thread: ThreadData): void {
+  if (!subject || thread.messages.length === 0) return
+  const threads = readThreads(subject).filter((entry) => entry.id !== thread.id)
   const trimmed: ThreadData = {
     ...thread,
     messages: thread.messages.slice(-MAX_MESSAGES_PER_THREAD),
     updatedAt: new Date().toISOString(),
   }
-  writeThreads([trimmed, ...threads])
+  writeThreads(subject, [trimmed, ...threads])
 }
 
-export function deleteThread(id: string): ThreadSummary[] {
-  writeThreads(readThreads().filter((thread) => thread.id !== id))
-  return listThreads()
+export function deleteThread(subject: string | null, id: string): ThreadSummary[] {
+  writeThreads(subject, readThreads(subject).filter((thread) => thread.id !== id))
+  return listThreads(subject)
+}
+
+export function hasAnonymousThreads(): boolean {
+  return validThreads(readStoredArray(THREADS_KEY)).length > 0
+}
+
+export function importAnonymousThreads(subject: string): boolean {
+  const existing = readThreads(subject)
+  const imported = validThreads(readStoredArray(THREADS_KEY))
+  const merged = [...existing, ...imported].filter((entry, index, entries) =>
+    entries.findIndex((other) => other.id === entry.id) === index)
+  return writeThreads(subject, merged)
 }

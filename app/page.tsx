@@ -12,12 +12,10 @@ import { StarterQuestions } from "./starter-questions"
 import { ChatInterface } from "./chat-interface"
 import { SearchResult, NewsResult, ImageResult } from "./types"
 import { useAuth } from "./contexts/auth-context"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
 import { ErrorDisplay } from "@/components/error-display"
-import { getSearchHistory, recordSearch, updateLatestSourceCount } from "@/lib/search-history"
+import { recordSearch, updateLatestSourceCount } from "@/lib/search-history"
+import { ImportAnonymousResearch } from '@/components/import-anonymous-research'
 import {
   deleteThread,
   getThread,
@@ -47,10 +45,6 @@ interface PipelineError {
 const STALL_TIMEOUT_MS = 30000
 // Hard cap on a single research run even when chunks keep arriving.
 const MAX_RUN_MS = 150000
-// Signed-out visitors get this many free searches before sign-in is required.
-// Signed-in users are unlimited.
-const FREE_SEARCH_LIMIT = 10
-
 function getMessageText(message: { parts?: Array<{ type?: string; text?: string }> }): string {
   if (!message.parts) return ""
   return message.parts
@@ -203,25 +197,25 @@ export default function AZLabsResearchPage() {
   const lastActivityAt = useRef(0)
   const loadingSince = useRef(0)
 
-  const [firecrawlApiKey, setFirecrawlApiKey] = useState<string>("")
-  const [hasApiKey, setHasApiKey] = useState<boolean>(false)
-  const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false)
-  const [isCheckingEnv, setIsCheckingEnv] = useState<boolean>(true)
-  const [pendingQuery, setPendingQuery] = useState<string>("")
   const [input, setInput] = useState<string>("")
   const [stallError, setStallError] = useState<PipelineError | null>(null)
   const [partError, setPartError] = useState<PipelineError | null>(null)
-  const [freeUsed, setFreeUsed] = useState(0)
   const [activeThreadId, setActiveThreadId] = useState<string>(() => newThreadId())
   const [threads, setThreads] = useState<ThreadSummary[]>([])
 
   const router = useRouter()
-  const { user, loading: authLoading } = useAuth()
+  const { user, subject, access, authError, loading: authLoading } = useAuth()
+  const operationId = useRef('')
 
   const { messages, sendMessage, status, error, stop, regenerate, setMessages, clearError } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/az-labs-research/search",
-      body: firecrawlApiKey ? { firecrawlApiKey } : undefined,
+      body: () => ({ researchRequestId: operationId.current }),
+      fetch: (input, init) => {
+        const headers = new Headers(init?.headers)
+        headers.set('x-research-request-id', operationId.current)
+        return fetch(input, { ...init, headers })
+      },
     }),
     onError: (err) => {
       toast.error(err.message || "Research request failed")
@@ -301,7 +295,7 @@ export default function AZLabsResearchPage() {
       setSources(latestSources)
       setNewsResults(latestNewsResults)
       setImageResults(latestImageResults)
-      updateLatestSourceCount(latestSources.length)
+      updateLatestSourceCount(subject, latestSources.length)
     }
     if (latestTicker !== null) setCurrentTicker(latestTicker)
     if (latestFollowUpQuestions.length > 0) setFollowUpQuestions(latestFollowUpQuestions)
@@ -328,12 +322,27 @@ export default function AZLabsResearchPage() {
         return next
       })
     }
-  }, [isPreview, status, messages])
+  }, [subject, isPreview, status, messages])
 
   useEffect(() => {
-    setFreeUsed(getSearchHistory().length)
-    setThreads(listThreads())
-  }, [])
+    stop()
+    setMessages([])
+    setMessageData(new Map())
+    setSources([])
+    setNewsResults([])
+    setImageResults([])
+    setFollowUpQuestions([])
+    setCurrentTicker(null)
+    setHasSearched(false)
+    setSearchStatus('')
+    setStallError(null)
+    setPartError(null)
+    setActiveThreadId(newThreadId())
+    setThreads(listThreads(subject))
+    const reload = () => setThreads(listThreads(subject))
+    window.addEventListener('research-history-imported', reload)
+    return () => window.removeEventListener('research-history-imported', reload)
+  }, [subject, setMessages, stop])
 
   // Active chat owns the viewport exactly; hiding the footer removes the second
   // page scrollbar so there is exactly one scroll region to navigate.
@@ -344,55 +353,7 @@ export default function AZLabsResearchPage() {
     return () => document.body.classList.remove("hide-site-footer")
   }, [isChatActive, isPreview])
 
-  useEffect(() => {
-    if (isPreview) {
-      setHasApiKey(true)
-      setIsCheckingEnv(false)
-      return
-    }
-
-    const checkApiKey = async () => {
-      try {
-        const response = await fetch("/api/az-labs-research/check-env")
-        const data = await response.json()
-
-        if (data.hasFirecrawlKey) {
-          setHasApiKey(true)
-        } else {
-          const storedKey = localStorage.getItem("firecrawl-api-key")
-          if (storedKey) {
-            setFirecrawlApiKey(storedKey)
-            setHasApiKey(true)
-          }
-        }
-      } catch {
-        // no-op
-      } finally {
-        setIsCheckingEnv(false)
-      }
-    }
-
-    void checkApiKey()
-  }, [isPreview])
-
-  useEffect(() => {
-    if (isCheckingEnv || !pendingQuery) return
-    if (hasApiKey) {
-      setHasSearched(true)
-      setStallError(null)
-      setPartError(null)
-      clearError()
-      sendMessage({ text: pendingQuery })
-      setPendingQuery("")
-      setInput("")
-    } else {
-      setShowApiKeyModal(true)
-    }
-    // sendMessage is stable for the chat instance; re-running on it would resend the query.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCheckingEnv, hasApiKey, pendingQuery])
-
-  // Dashboard "re-run" links land here as ?q=. Consume it once the key check resolves.
+  // Deep links prefill a question; visiting a URL must never spend an allowance.
   const initialQuerySent = useRef(false)
   useEffect(() => {
     if (isPreview || initialQuerySent.current) return
@@ -402,23 +363,17 @@ export default function AZLabsResearchPage() {
       initialQuerySent.current = true
       return
     }
-    if (isCheckingEnv) return
+    if (authLoading) return
     initialQuerySent.current = true
     window.history.replaceState(null, "", window.location.pathname)
     setInput(initial)
-    if (!hasApiKey) {
-      setPendingQuery(initial)
-      return
-    }
-    sendQuery(initial)
-    // sendQuery identity changes per render; the ref guard makes this run once.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPreview, isCheckingEnv, hasApiKey])
+    // The user starts the protected provider operation with the Search button.
+  }, [isPreview, authLoading])
 
   // Persist the active thread (debounced) so it survives reloads and appears in the rail.
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
-    if (isPreview || messages.length === 0) return
+    if (isPreview || !subject || messages.length === 0) return
     if (typeof window === "undefined") return
     if (saveTimer.current) clearTimeout(saveTimer.current)
     const threadMessages = messages.map((m) => ({ id: m.id, role: m.role as "user" | "assistant", parts: m.parts }))
@@ -436,15 +391,15 @@ export default function AZLabsResearchPage() {
       ticker: currentTicker,
     }
     saveTimer.current = setTimeout(() => {
-      saveThread(snapshot)
-      setThreads(listThreads())
+      saveThread(subject, snapshot)
+      setThreads(listThreads(subject))
     }, 800)
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current)
     }
     // Re-run on every settled message/data change; the timer debounces token churn.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPreview, messages, messageData, sources, newsResults, imageResults, followUpQuestions, currentTicker, activeThreadId])
+  }, [subject, isPreview, messages, messageData, sources, newsResults, imageResults, followUpQuestions, currentTicker, activeThreadId])
 
   const startNewThread = () => {
     if (isLoading) stop()
@@ -463,7 +418,7 @@ export default function AZLabsResearchPage() {
   const selectThread = (id: string) => {
     if (id === activeThreadId) return
     if (isLoading) stop()
-    const thread = getThread(id)
+    const thread = getThread(subject, id)
     if (!thread) return
     currentMessageIndex.current = -1
     lastDataLength.current = 0
@@ -478,8 +433,8 @@ export default function AZLabsResearchPage() {
   }
 
   const removeThread = (id: string) => {
-    deleteThread(id)
-    setThreads(listThreads())
+    deleteThread(subject, id)
+    setThreads(listThreads(subject))
     if (id === activeThreadId) startNewThread()
   }
 
@@ -524,6 +479,11 @@ export default function AZLabsResearchPage() {
 
   const handleRetry = () => {
     if (isPreview || isLoading) return
+    if (!subject) {
+      router.push('/auth/login?next=/')
+      return
+    }
+    operationId.current = `research:${newThreadId()}`
     clearPipelineErrors()
     const lastMessage = messages[messages.length - 1] as
       | { role?: string; parts?: Array<{ type?: string; text?: string }> }
@@ -540,21 +500,6 @@ export default function AZLabsResearchPage() {
     }
   }
 
-  const handleApiKeySubmit = () => {
-    if (!firecrawlApiKey.trim()) return
-
-    localStorage.setItem("firecrawl-api-key", firecrawlApiKey)
-    setHasApiKey(true)
-    setShowApiKeyModal(false)
-    toast.success("API key saved successfully")
-
-    if (pendingQuery) {
-      clearPipelineErrors()
-      sendMessage({ text: pendingQuery })
-      setPendingQuery("")
-    }
-  }
-
   const sendQuery = (query: string) => {
     if (!query.trim()) return
 
@@ -563,24 +508,20 @@ export default function AZLabsResearchPage() {
       return
     }
 
-    if (!hasApiKey) {
-      setPendingQuery(query)
-      // Until the server key check returns, hold the query rather than asking for a key.
-      if (!isCheckingEnv) setShowApiKeyModal(true)
+    if (authLoading) {
+      toast.info('Checking your AZ Labs account…')
       return
     }
-
-    // Signed-out visitors get a few free searches, then sign-in is required.
-    if (!user && !authLoading && getSearchHistory().length >= FREE_SEARCH_LIMIT) {
-      toast.info("You've used your free searches — sign in to continue.")
-      router.push("/auth/login?next=/")
+    if (!subject) {
+      const destination = `/?q=${encodeURIComponent(query)}`
+      router.push(`/auth/login?next=${encodeURIComponent(destination)}`)
       return
     }
 
     setHasSearched(true)
     clearPipelineErrors()
-    recordSearch(query, 0)
-    setFreeUsed(getSearchHistory().length)
+    recordSearch(subject, query, 0)
+    operationId.current = `research:${newThreadId()}`
     sendMessage({ text: query })
     setInput("")
   }
@@ -639,7 +580,7 @@ export default function AZLabsResearchPage() {
         <div className="relative mx-auto max-w-7xl">
           {!isChatActive && (
             <div className="mx-auto max-w-4xl space-y-7 text-center animate-fade-up">
-              <span className="chip mx-auto">Parent-site aligned modern research UI</span>
+              <span className="chip mx-auto">An AZ Labs product</span>
               <h1 className="text-4xl font-semibold tracking-tight text-[var(--on-surface)] sm:text-5xl lg:text-6xl">
                 AZ Labs Research
               </h1>
@@ -656,28 +597,15 @@ export default function AZLabsResearchPage() {
               handleInputChange={(event) => setInput(event.target.value)}
               isLoading={effectiveLoading}
             />
-            {!isPreview && !user && !authLoading && !isChatActive && (
+            {!isPreview && !authLoading && !isChatActive && (
               <div className="mt-3 flex justify-center animate-fade-in">
-                {freeUsed >= FREE_SEARCH_LIMIT ? (
-                  <Link
-                    href="/auth/login?next=/"
-                    className="chip focus-ring transition-colors hover:border-[color-mix(in_srgb,var(--primary-accent)_45%,transparent)] hover:text-[var(--on-surface)]"
-                  >
-                    Free searches used — sign in for unlimited research
-                  </Link>
-                ) : (
-                  <span className="chip">
-                    {FREE_SEARCH_LIMIT - freeUsed} of {FREE_SEARCH_LIMIT} free searches left
-                    <Link
-                      href="/auth/login?next=/"
-                      className="focus-ring rounded font-semibold text-[var(--primary-accent)] hover:text-[var(--primary-accent-strong)]"
-                    >
-                      Sign in for unlimited
-                    </Link>
-                  </span>
-                )}
+                <span className="chip">{access ? `${access.tier} access · ${access.limits.daily} requests per day` : 'Use your AZ Labs account to start researching'}
+                  {!subject && <Link href="/auth/login?next=/" className="focus-ring rounded font-semibold text-[var(--primary-accent)]">Continue with AZ Labs</Link>}
+                </span>
               </div>
             )}
+            {!isPreview && !isChatActive && authError && <p className="mx-auto mt-3 max-w-xl text-center text-sm text-[var(--on-surface-variant)]">{authError} <Link href="https://azlabs.ai/account" className="underline">Manage AZ Labs access</Link></p>}
+            {!isPreview && !isChatActive && <ImportAnonymousResearch />}
           </div>
 
           {!isChatActive && (
@@ -770,41 +698,6 @@ export default function AZLabsResearchPage() {
         </div>
       </div>
 
-      <Dialog open={showApiKeyModal} onOpenChange={setShowApiKeyModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Firecrawl API key required</DialogTitle>
-            <DialogDescription>
-              AZ Labs Research needs a Firecrawl API key for web retrieval. You can generate one at{" "}
-              <a
-                href="https://www.firecrawl.dev"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[var(--primary-accent)] underline"
-              >
-                firecrawl.dev
-              </a>
-              .
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
-            <Input
-              placeholder="Enter your API key"
-              value={firecrawlApiKey}
-              onChange={(event) => setFirecrawlApiKey(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault()
-                  handleApiKeySubmit()
-                }
-              }}
-            />
-            <Button onClick={handleApiKeySubmit} className="w-full">
-              Save API Key
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
