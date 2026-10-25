@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AZ Labs — Full Technology Stack & Infrastructure Architecture</title>
+  <style>
+:root {
+  --bg-color: #0f172a;
+  --card-bg: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-color: #334155;
+  --accent: #38bdf8;
+  --accent-hover: #0284c7;
+  --table-header: #1e293b;
+  --table-stripe: #182234;
+  --code-bg: #090d16;
+  --badge-bg: #1e3a5f;
+  --badge-text: #7dd3fc;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg-color: #f8fafc;
+    --card-bg: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --border-color: #e2e8f0;
+    --accent: #0284c7;
+    --accent-hover: #0369a1;
+    --table-header: #f1f5f9;
+    --table-stripe: #f8fafc;
+    --code-bg: #f1f5f9;
+    --badge-bg: #e0f2fe;
+    --badge-text: #0369a1;
+  }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  line-height: 1.6;
+  padding: 2.5rem 1.5rem;
+}
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+}
+header {
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 1.5rem;
+  margin-bottom: 2rem;
+}
+h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 0.75rem;
+}
+.meta-callout {
+  background: var(--card-bg);
+  border-left: 4px solid var(--accent);
+  padding: 1rem 1.25rem;
+  border-radius: 0 8px 8px 0;
+  margin-bottom: 1.5rem;
+  color: var(--text-secondary);
+}
+.meta-callout strong {
+  color: var(--text-primary);
+}
+h2 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  margin: 2rem 0 1rem 0;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--accent);
+}
+h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 1.25rem 0 0.5rem 0;
+}
+p {
+  margin-bottom: 0.75rem;
+  color: var(--text-secondary);
+}
+strong { color: var(--text-primary); }
+ul {
+  list-style-type: square;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+}
+li { margin-bottom: 0.35rem; }
+li strong { color: var(--text-primary); }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+  font-size: 0.9rem;
+  background: var(--card-bg);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+th, td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+th {
+  background-color: var(--table-header);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+tr:nth-child(even) { background-color: var(--table-stripe); }
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85em;
+  background: var(--code-bg);
+  color: var(--accent);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+}
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover { text-decoration: underline; }
+hr {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 2rem 0;
+}
+footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+</style>
+</head>
+<body>
+  <div class="container">
+    <header><h1>AZ Labs — Full Technology Stack &amp; Infrastructure Architecture</h1></header>
+    <div class="meta-callout"><strong>Authoritative master reference</strong> for all services, platforms, cloud resources, hardware nodes, database systems, AI model providers, API integrations, and developer tooling across AZ Labs, Vibe Code, Buy and Save, and personal operations.</div>
+    <p>&gt;</p>
+    <div class="meta-callout"><em>Maintained in Obsidian Second Brain (<code>Area 51/00 Dashboard/</code>) and synced to Apple Notes (<code>AZ Labs</code> folder).</em></div>
+    <hr>
+    <h2>1. Fleet &amp; Hardware Nodes</h2>
+    <table>
+    <thead><tr>
+    <th>Node</th>
+    <th>Operating System</th>
+    <th>Hostname / IP</th>
+    <th>Primary Purpose &amp; Services</th>
+    <th>Telemetry Agent</th>
+    </tr></thead><tbody>
+    <tr>
+    <td><strong>Katara</strong></td>
+    <td>macOS (Apple Silicon)</td>
+    <td><code>192.168.1.20</code> (<code>AZs-MacBook.local</code>)</td>
+    <td>Primary control-plane workstation &amp; AI orchestrator (Antigravity, Codex, Claude Code, Aside, Hermes, Wispr Flow).</td>
+    <td>Grafana Alloy (<code>sh.brew.alloy</code>)</td>
+    </tr>
+    <tr>
+    <td><strong>Pal VPS</strong></td>
+    <td>Ubuntu 24.04 LTS</td>
+    <td><code>129.121.92.191:55555</code> (<code>pal</code>)</td>
+    <td>Production cloud server in London UK. Hosts Caddy reverse proxy, active websites, MariaDB, PostgreSQL, WordPress, and automated systemd watchdog (<code>pal-process-guard.timer</code>).</td>
+    <td>Grafana Alloy (<code>alloy.service</code>)</td>
+    </tr>
+    <tr>
+    <td><strong>AJ Workstation</strong></td>
+    <td>Ubuntu (Dual-boot)</td>
+    <td><code>192.168.1.22</code> (<code>aj</code>)</td>
+    <td>Master storage node hosting <code>/mnt/data/AZ Labs</code> repository tree, Docker containers, media archive, and Cloudflare Ingress Tunnel (<code>azlabs-groceries</code>).</td>
+    <td>Grafana Alloy (<code>alloy.service</code>)</td>
+    </tr>
+    <tr>
+    <td><strong>Muse VPS</strong></td>
+    <td>Ubuntu</td>
+    <td><code>muse</code> (<code>htch-runtime</code>)</td>
+    <td>Take-over execution host for migrated cron and background agent tooling (<code>/home/hatch</code>).</td>
+    <td>SSH bridge via Pal</td>
+    </tr>
+    <tr>
+    <td><strong>Ava PC</strong></td>
+    <td>Windows</td>
+    <td><code>ava-pc</code></td>
+    <td>Family workstation.</td>
+    <td>Remote CLI</td>
+    </tr>
+    </tbody></table>
+    <hr>
+    <h2>2. Active Web Domain Portfolio &amp; Ingress</h2>
+    <p>Authoritative commercial portfolio managed via Cloudflare DNS and auto-renewed on TrueHost (<code>~/.agents/domains.md</code>):</p>
+    <table>
+    <thead><tr>
+    <th>Domain</th>
+    <th>Ingress / Hosting</th>
+    <th>Primary Purpose</th>
+    <th>Status Page / Probe ID</th>
+    </tr></thead><tbody>
+    <tr>
+    <td><strong><code>azlabs.ai</code></strong></td>
+    <td>Cloudflare DNS -&gt; Vercel / Next.js</td>
+    <td>Flagship AI agency platform, technical guides, editorial news.</td>
+    <td>Synthetic Check <code>13780</code> (<code>status.azlabs.ai</code>)</td>
+    </tr>
+    <tr>
+    <td><strong><code>azlabs.co.za</code></strong></td>
+    <td>Cloudflare DNS</td>
+    <td>Commercial South African corporate entity &amp; customer portal.</td>
+    <td>Synthetic Check <code>13781</code> (<code>status.azlabs.ai</code>)</td>
+    </tr>
+    <tr>
+    <td><strong><code>buyandsave.co.za</code></strong></td>
+    <td>Cloudflare DNS (WAF probe skip) -&gt; Pal VPS</td>
+    <td>WooCommerce online retail store &amp; deal engine.</td>
+    <td>Synthetic Check <code>13782</code> (<code>status.azlabs.ai</code>)</td>
+    </tr>
+    <tr>
+    <td><strong><code>englishunlocked.co.za</code></strong></td>
+    <td>Cloudoon DNS</td>
+    <td>Educational English training property.</td>
+    <td>Active</td>
+    </tr>
+    <tr>
+    <td><strong><code>vibecode.co.za</code></strong></td>
+    <td>Cloudflare DNS</td>
+    <td>Vibe Code AI agency portal.</td>
+    <td>Active</td>
+    </tr>
+    </tbody></table>
+    <h3>Dedicated Subdomains &amp; Tunnels:</h3>
+    <ul><li><strong><code>grafana.azlabs.ai</code></strong>: Branded Grafana Cloud instance (Cloudflare CNAME to <code>azlabs.grafana.net</code>).</li></ul>
+    <ul><li><strong><code>status.azlabs.ai</code></strong>: Branded public status page (Cloudflare CNAME to <code>statuspage.betteruptime.com</code>).</li></ul>
+    <ul><li><strong>Cloudflare Ingress Tunnel (<code>azlabs-groceries</code> on AJ)</strong>:</li></ul>
+    <ul><li><code>groceries-connector.azlabs.ai</code> (<code>:4100</code>)</li></ul>
+    <ul><li><code>smb.azlabs.ai</code> (<code>:3006</code>)</li></ul>
+    <ul><li><code>clips.azlabs.ai</code> (<code>:3210</code>)</li></ul>
+    <p><em>Decommissioned / lapsed domains (do NOT renew)</em>: <code>schoolsearch.co.za</code>, <code>nosuch.co.za</code>, <code>ustream.co.za</code>.</p>
+    <hr>
+    <h2>3. Observability, Telemetry &amp; Site Reliability</h2>
+    <ul><li><strong>Grafana Cloud Free Stack (<code>AZ Labs</code> / <code>azlabsai</code>)</strong>:</li></ul>
+    <ul><li><strong>Custom Branded URL</strong>: <a href=\"https://grafana.azlabs.ai\" target=\"_blank\">https://grafana.azlabs.ai</a> (Stack Slug: <code>azlabs.grafana.net</code>, Org ID: <code>1960752</code>, Stack ID: <code>1891045</code>).</li></ul>
+    <ul><li><strong>Unified Dashboard</strong>: <code>AZ Labs Infrastructure &amp; Web Overview</code> (22 panels across Synthetics, CPU, RAM, Disk, Load, Network, and Live Logs).</li></ul>
+    <ul><li><strong>Prometheus (Metrics Remote Write)</strong>: <code>https://prometheus-prod-55-prod-gb-south-1.grafana.net/api/prom/push</code> (User: <code>3706313</code>).</li></ul>
+    <ul><li><strong>Loki (Logs Ingestion)</strong>: <code>https://logs-prod-035.grafana.net/loki/api/v1/push</code> (User: <code>1848821</code>).</li></ul>
+    <ul><li><strong>Tempo (Traces)</strong>: <code>https://tempo-prod-25-prod-gb-south-1.grafana.net/tempo</code> (User: <code>1843122</code>).</li></ul>
+    <ul><li><strong>Alert Notification Contact Points (<code>azlabs-alerts</code>)</strong>:</li></ul>
+    <ul><li><strong>Telegram</strong>: <code>@AZLabs_Agent_bot</code> (Chat ID <code>7104596722</code>).</li></ul>
+    <ul><li><strong>Discord</strong>: <code>#┌🛸┊area-51</code> (<code>AZ Labs Grafana Alerts</code> webhook).</li></ul>
+    <ul><li><strong>Active Production Alert Rules</strong>:</li></ul>
+    <p>1. <code>azlabs-website-down</code>: Website Down (<code>probe_success == 0</code> for 3m).</p>
+    <p>2. <code>azlabs-ssl-expiring</code>: SSL Certificate Expiring Soon (<code>&lt; 14d</code> for 5m).</p>
+    <p>3. <code>azlabs-disk-critical</code>: Server Disk Space Critical (<code>&gt; 92%</code> for 5m).</p>
+    <p>4. <code>azlabs-mem-cpu-pressure</code>: High Memory / CPU Pressure (<code>&gt; 90%</code> for 5m).</p>
+    <ul><li><strong>Local CLI Tooling</strong>:</li></ul>
+    <ul><li><code>az-grafana</code> (symlinked as <code>grafanactl</code>): Fast stack management, Alloy deployments (<code>deploy pal|aj|local</code>), direct Loki push (<code>push-log</code>), and <code>/morning</code> brief snapshot (<code>brief [--json]</code>).</li></ul>
+    <ul><li><code>gcx</code> (v1.7.1): Grafana Labs official AI-agent CLI (<code>context: azlabs</code>, pre-configured datasources).</li></ul>
+    <ul><li><code>24 gcx Agent Skills</code>: Installed in <code>~/.agents/skills/</code> for zero-MCP agentic debugging.</li></ul>
+    <ul><li><strong>Better Stack Uptime</strong>:</li></ul>
+    <ul><li>Public status page: <a href=\"https://status.azlabs.ai\" target=\"_blank\">https://status.azlabs.ai</a> (<code>azlabs.betteruptime.com</code>, Team ID <code>t622266</code>, Page ID <code>268878</code>).</li></ul>
+    <ul><li><strong>PostHog</strong>: Product analytics and telemetry instrumentation (<code>POSTHOG_PERSONAL_API_KEY</code>).</li></ul>
+    <hr>
+    <h2>4. Identity, Authentication &amp; Security Guardrails</h2>
+    <ul><li><strong>WorkOS</strong>:</li></ul>
+    <ul><li><code>WORKOS_API_KEY</code>: AuthKit user management and enterprise identity bridge.</li></ul>
+    <ul><li><strong>MANDATORY $0 FREE TIER GUARDRAIL</strong>: AuthKit free tier up to 1,000,000 MAUs. Never provision billable add-ons: no $99/mo custom domains (use free <code>.authkit.app</code> or reverse proxy routes), no $125/mo SSO connections, no $125/mo Directory Sync, max 1,000 free Radar checks.</li></ul>
+    <ul><li><strong>Clerk</strong>: <code>CLERK_SECRET_KEY</code> (Alternative modern auth provider).</li></ul>
+    <ul><li><strong>Sweet Cookie</strong>: Local CLI tool extracting scoped authentication cookies from Aside Browser profile (<code>~/Library/Application Support/Aside/Default</code>) for zero-password CLI operations.</li></ul>
+    <ul><li><strong>Bitwarden &amp; macOS Keychain</strong>: Master secrets and credential storage.</li></ul>
+    <hr>
+    <h2>5. Databases, State &amp; Storage Systems</h2>
+    <ul><li><strong>Supabase</strong>: <code>SUPABASE_ACCESS_TOKEN</code>, <code>SUPABASE_PROJECT_REF</code>, <code>SUPABASE_DB_PASSWORD</code> (Managed PostgreSQL cloud cluster).</li></ul>
+    <ul><li><strong>Neon Postgres</strong>: <code>NEON_API_KEY</code>, <code>NEON_DATABASE_URL</code> (Serverless Postgres with instant branching).</li></ul>
+    <ul><li><strong>Self-Hosted MariaDB &amp; PostgreSQL</strong>: Running locally on Pal VPS for WooCommerce and internal applications.</li></ul>
+    <ul><li><strong>Canonical SQLite Databases</strong>:</li></ul>
+    <ul><li><code>aubrey-budget</code>: Backed by SQLite and managed via <code>budgetctl</code>.</li></ul>
+    <ul><li><code>wispr-flow</code>: Personal dictionary, learned phrases, and snippets (<code>~/Library/Application Support/Wispr Flow/</code>).</li></ul>
+    <ul><li><code>twscrape</code>: X/Twitter account pool and cookie state.</li></ul>
+    <ul><li><strong>Media &amp; Backup Storage Tiering</strong>:</li></ul>
+    <p>1. <strong>Put.io</strong> (<code>PUTIO_TOKEN</code>, <code>PUTIO_CLIENT_SECRET</code>): Priority 1 default target.</p>
+    <p>2. <strong>AJ Workstation</strong>: Priority 2 target for permanent large media storage.</p>
+    <p>3. <strong>Seedr</strong>: Priority 3 emergency fallback (strict 6.5 GB limit).</p>
+    <hr>
+    <h2>6. AI Model Providers &amp; Inference APIs</h2>
+    <ul><li><strong>Google Gemini</strong>: <code>GEMINI_API_KEY</code> (Gemini 2.5 Pro, Flash, Live API, native Antigravity model).</li></ul>
+    <ul><li><strong>OpenAI</strong>: <code>OPENAI_API_KEY</code> (GPT-4o, GPT-5 / o-series reasoning models, Audio API).</li></ul>
+    <ul><li><strong>Anthropic Claude</strong>: Claude 3.5 Sonnet / Haiku / Opus (via Claude Code and desktop app).</li></ul>
+    <ul><li><strong>OpenRouter</strong>: <code>OPENROUTER_API_KEY</code>, <code>AIMI_OPENROUTER_API_KEY</code> (Universal routing proxy).</li></ul>
+    <ul><li><strong>OpenCode Go / Zen</strong>: <code>OPENCODE_API_KEY</code>, <code>OPENCODE_GO_API_KEY</code> (Low-latency coding endpoints).</li></ul>
+    <ul><li><strong>Mistral AI</strong>: <code>MISTRAL_API_KEY</code> (Codestral, Mistral Large).</li></ul>
+    <ul><li><strong>DeepSeek</strong>: <code>DEEPSEEK_API_KEY</code> (DeepSeek V3, R1 reasoning).</li></ul>
+    <ul><li><strong>NVIDIA NIM</strong>: <code>NVIDIA_API_KEY</code> (Cloud-hosted open weights).</li></ul>
+    <ul><li><strong>Black Forest Labs (BFL)</strong>: <code>BFL_API_KEY</code> (FLUX.1 Schnell, FLUX.2 Dev).</li></ul>
+    <ul><li><strong>Hugging Face</strong>: <code>HF_TOKEN</code>.</li></ul>
+    <hr>
+    <h2>7. Voice, Audio &amp; Speech Processing</h2>
+    <ul><li><strong>Fish Audio / Fish TTS</strong>: <code>FISHTTS_API_KEY</code> (Default primary engine for speech generation, voiceovers, and news reading; free tier).</li></ul>
+    <ul><li><strong>ElevenLabs</strong>: <code>ELEVENLABS_API_KEY</code>, <code>ELEVENLABS_VOICE_ID</code> (Voice cloning, sound effects, voice isolation, and Scribe STT).</li></ul>
+    <ul><li><strong>Wispr Flow</strong>: Primary voice dictation and snippet expansion tool on Katara (reopened immediately with <code>open &quot;/Applications/Wispr Flow.app&quot;</code> after edits).</li></ul>
+    <hr>
+    <h2>8. Web Scraping, Search &amp; Discovery APIs</h2>
+    <ul><li><strong>Firecrawl</strong>: <code>FIRECRAWL_API_KEY</code> (Autonomous web navigation, page scraping, and markdown parsing).</li></ul>
+    <ul><li><strong>Exa</strong>: <code>EXA_API_KEY</code> (Neural semantic search).</li></ul>
+    <ul><li><strong>Tavily</strong>: <code>TAVILY_API_KEY</code> (Agent-optimized search).</li></ul>
+    <ul><li><strong>Brave Search</strong>: <code>BRAVE_API_KEY</code> (Real-time web and Reddit search).</li></ul>
+    <ul><li><strong>News API</strong>: <code>NEWS_API_KEY</code> (Global and South African news feeds).</li></ul>
+    <ul><li><strong>Aside Browser</strong>: Headed browser environment for interactive consent, cookies, and LinkedIn.</li></ul>
+    <hr>
+    <h2>9. Communication, Messaging &amp; Email</h2>
+    <ul><li><strong>Telegram</strong>: <code>TELEGRAM_BOT_TOKEN</code>, <code>TELEGRAM_CHAT_ID</code> (<code>@AZLabs_Agent_bot</code> alerts, status notifications, and command relay).</li></ul>
+    <ul><li><strong>Discord</strong>: <code>DISCORD_BOT_TOKEN</code> (AZ Labs community server, product channels, <code>#area-51</code> observability feeds).</li></ul>
+    <ul><li><strong>WhatsApp</strong>: Multi-account routing via <code>wacli</code> (personal <code>wa-personal</code> and agent/business <code>wa-agent</code>).</li></ul>
+    <ul><li><strong>Sendblue</strong>: Shared US iMessage and SMS delivery.</li></ul>
+    <ul><li><strong>Twilio</strong>: <code>TWILIO_API_KEY_SID</code>, <code>TWILIO_AUTH_TOKEN</code> (Programmable SMS and voice fallback).</li></ul>
+    <ul><li><strong>Resend</strong>: <code>RESEND_API_KEY</code> (Transactional application emails).</li></ul>
+    <ul><li><strong>AgentMail</strong>: <code>AGENTMAIL_API_KEY</code> (Autonomous AI agent email inboxes).</li></ul>
+    <ul><li><strong>Google Workspace (<code>gws</code>)</strong>: Multi-account entrypoint (<code>aubrey@azlabs.ai</code>, Vibe Code, GPT Code Shop, HashTag3D, personal).</li></ul>
+    <hr>
+    <h2>10. Geography, Logistics &amp; Industry APIs</h2>
+    <ul><li><strong>Location &amp; Mapping</strong>: Google Maps (<code>GOOGLE_MAPS_API_KEY</code>), Geoapify (<code>GEOAPIFY_API_KEY</code>), LocationIQ (<code>LOCATIONIQ_API_KEY</code>), TomTom (<code>TOMTOM_API_KEY</code>), Overture Maps.</li></ul>
+    <ul><li><strong>Job Aggregators</strong>: Adzuna (<code>ADZUNA_API_KEY</code>), Careerjet (<code>CAREERJET_API_KEY</code>), Jooble (<code>JOOBLE_API_KEY</code>).</li></ul>
+    <ul><li><strong>Logistics &amp; Retail</strong>: AfterShip (<code>AFTERSHIP_API_KEY</code>), RapidAPI (South African grocery pricing scrapers: Pick n Pay, Checkers, Woolworths, Makro).</li></ul>
+    <hr>
+    <h2>11. Developer Platform &amp; Design Tooling</h2>
+    <ul><li><strong>GitHub Multi-Account Setup</strong>:</li></ul>
+    <ul><li><code>AZLabsAI</code> (<code>github-azlabs</code> / <code>~/.ssh/id_ed25519</code>): Org repositories.</li></ul>
+    <ul><li><code>TH33ORACL3</code> (<code>github-th33oracl3</code> / <code>~/.ssh/id_ed25519_th33oracl3</code>): Personal repositories.</li></ul>
+    <ul><li><code>VibeC0de</code> (<code>github-vibecode</code> / <code>~/.ssh/id_ed25519_vibecode</code>): Vibe Code repositories.</li></ul>
+    <ul><li>Switch active account via <code>gh auth switch --hostname github.com --user &lt;account&gt;</code>.</li></ul>
+    <ul><li><strong>Figma</strong>: <code>FIGMA_ACCESS_TOKEN</code> (UI/UX design files).</li></ul>
+    <ul><li><strong>Linear</strong>: <code>FEEDBACK_LINEAR_KEY</code> (Issue and project tracking).</li></ul>
+    <ul><li><strong>Daytona &amp; Factory AI</strong>: <code>DAYTONA_API_KEY</code>, <code>FACTORY_API_KEY</code> (Cloud developer environments &amp; agents).</li></ul>
+    <hr>
+    <h2>12. Permanent Safety Guards &amp; Policies</h2>
+    <ul><li><strong>Pal VPS Rogue Process Watchdog</strong>: <code>/usr/local/bin/pal-process-guard.sh</code> + <code>pal-process-guard.timer</code> terminates full-disk recursive searches running &gt; 90s or &gt; 40% CPU.</li></ul>
+    <ul><li><strong>Pal VPS Search Guard</strong>: <code>/etc/profile.d/safe-search-guard.sh</code> throttles recursive root searches to <code>nice -n 15</code> and hard <code>timeout 45s</code>.</li></ul>
+    <ul><li><strong>Strict No MCP Policy (<code>mcp-off</code>)</strong>: Aubrey uses skills and one-shot CLIs exclusively (<code>~/bin/mcp-off</code> guard enforces zero running MCP daemon processes).</li></ul>
+    <ul><li><strong>Zero-Spend WorkOS &amp; Cloud Limits</strong>: Free tiers strictly locked to $0.00 with zero billable add-ons.</li></ul>
+    <footer>
+      <p>AZ Labs System Architecture • Maintained in Second Brain & Apple Notes • Synced 2026-10-25</p>
+    </footer>
+  </div>
+</body>
+</html>
